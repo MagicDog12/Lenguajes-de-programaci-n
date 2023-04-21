@@ -17,7 +17,7 @@
            | {+ <expr> <expr>}
            | {< <expr> <expr>}
            | {= <expr> <expr>}
-           | {! <expr> <expr>}
+           | {! <expr>}
            | {&& <expr> <expr>}
            | {|| <expr> <expr>}
            | {fst <expr>}
@@ -41,7 +41,7 @@
   (my-add l r)
   (my-< l r)
   (my-= l r)
-  (my-! l r)
+  (my-! e)
   (my-and l r)
   (my-or l r)
   (fst e)
@@ -50,6 +50,15 @@
   (my-with list body)
   (app name arg-expr)
   )
+
+; busca funcion por nombre
+(define (lookup-fundef f funs)
+  (match funs
+    ['() (error "undefined function:" f)]
+    [(cons fd rest)
+     (if (equal? (fundef-name fd) f)
+         fd
+         (lookup-fundef f rest))]))
 
 #|
 tipo inductivo para los valores del lenguaje
@@ -94,18 +103,39 @@ representation BNF:
 
 ;; parse-fundef :: s-Fundef -> Fundef
 (define (parse-fundef sf)
-  ; ...
-  (error "not yet implemented"))
+  (match sf
+    [(list name args body) (fundef name args (parse-expr body))]))
 
 
 ;; interp :: Expr -> Env -> List[FunDef] -> Val
-(define (interp e env funs)
-  (match e
+(define (interp exp env funs)
+  (match exp
     [(num n) (numV n)]
     [(id x) (env-lookup x env)]
     [(bool b) (boolV b)]
-    ; ...
-    [_ (error "not yet implemented")]
+    [(my-cons l r) (pairV (interp l env funs) (interp r env funs))]
+    [(my-add1 e) (numV (+ 1 (numV-n (interp e env funs))))]
+    [(my-add l r) (numV (+ (numV-n (interp l env funs)) (numV-n (interp r env funs))))]
+    [(my-< l r) (boolV (< (numV-n (interp l env funs)) (numV-n (interp r env funs))))]
+    [(my-= l r) (boolV (= (numV-n (interp l env funs)) (numV-n (interp r env funs))))]
+    [(my-! e) (boolV (not (boolV-b (interp e env funs))))]
+    [(my-and l r) (boolV (and (boolV-b (interp l env funs)) (boolV-b (interp r env funs))))]
+    [(my-or l r) (boolV (or (boolV-b (interp l env funs)) (boolV-b (interp r env funs))))]
+    [(fst e) (match (interp e env funs)
+               [(pairV lV _) lV])]
+    [(snd e) (match (interp e env funs)
+               [(pairV _ rV) rV])]
+    [(my-if c t f) (if (interp c env funs) (interp t env funs) (interp f env funs))]
+    [(my-with list body) (cond
+                           [(equal? list '()) (interp body env funs)]
+                           [else (interp (my-with (cdr list) body)
+                                         (extend-env (car (car list)) (interp (cdr (car list)) env funs) env)
+                                         funs)])]
+    [(app f e)
+     (def (fundef _ arg body) (lookup-fundef f funs))
+     (interp body
+             (extend-env arg (interp e env funs) (empty-env))
+             funs)]
     ))
 
 (define (run sp)

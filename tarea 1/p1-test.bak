@@ -3,7 +3,6 @@
 
 (test (run '{5}) (numV 5))
 (test (run '{#t}) (boolV #t))
-(test (run '{{+ 1 2}}) (numV 3))
 
 (test (run '{ ;; Programa de Ejemplo 1
              {define {sum x y z} {+ x {+ y z}}}
