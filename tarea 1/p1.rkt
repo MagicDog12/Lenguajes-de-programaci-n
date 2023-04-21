@@ -12,18 +12,18 @@
 <expr>   ::= <num>
            | <id>
            | <bool>
-           | {cons <expr> <expr>}
-           | {add1 <expr>}
-           | {+ <expr> <expr>}
-           | {< <expr> <expr>}
-           | {= <expr> <expr>}
-           | {! <expr> <expr>}
-           | {&& <expr> <expr>}
-           | {|| <expr> <expr>}
+           | {my-cons <expr> <expr>}
+           | {my-add1 <expr>}
+           | {my-add <expr> <expr>}
+           | {my-< <expr> <expr>}
+           | {my-= <expr> <expr>}
+           | {my-! <expr> <expr>}
+           | {my-and <expr> <expr>}
+           | {my-or <expr> <expr>}
            | {fst <expr>}
            | {snd <expr>}
-           | {if <expr> <expr> <expr>}
-           | {with {{<id> <expr>}*} <expr>}
+           | {my-if <expr> <expr> <expr>}
+           | {my-with {{<id> <expr>}*} <expr>}
            | {<id> <expr>*}
 |#
 (deftype Prog
@@ -36,9 +36,19 @@
   (num n)
   (id x)
   (bool b)
-  (add l r)
-  (lt l r)
-  ; ...
+  (my-cons l r)
+  (my-add1 e)
+  (my-add l r)
+  (my-< l r)
+  (my-= l r)
+  (my-! l r)
+  (my-and l r)
+  (my-or l r)
+  (fst e)
+  (snd e)
+  (my-if c t f)
+  (my-with name named-expr body)
+  (app name arg-expr)
   )
 
 #|
