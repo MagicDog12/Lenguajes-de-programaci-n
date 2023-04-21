@@ -41,26 +41,19 @@
   ; ...
   )
 
-#|
-tipo inductivo para los valores del lenguaje
-
-representation BNF:
-<val>   ::= {numV <num>}
-           | {boolV <bool>}
-           | {pairV <val> <val>}
-|#
+;; tipo inductivo para los valores del lenguaje
 (deftype Val
   (numV n)
   (boolV b)
   (pairV lV rV))
 
-;; parse :: s-Prog -> Prog
+;; parse :: ...
 (define (parse sp)
   (match sp
     [(list ds ... e) (prog (map parse-fundef ds) (parse-expr e))] ;; ds es la lista de definiciones, e es la expresion principal
     ))
 
-;; parse-expr :: s-Expr -> Expr
+;; parse-expr :: ...
 (define (parse-expr se)
   (match se
     [(? number?) (num se)]
@@ -72,13 +65,13 @@ representation BNF:
     [_ (error "not yet implemented")]
     ))
 
-;; parse-fundef :: s-Fundef -> Fundef
+;; parse-fundef :: ...
 (define (parse-fundef sf)
   ; ...
   (error "not yet implemented"))
 
 
-;; interp :: Expr -> Env -> List[FunDef] -> Val
+;; interp :: ...
 (define (interp e env funs)
   (match e
     [(num n) (numV n)]
