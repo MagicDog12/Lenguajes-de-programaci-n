@@ -47,7 +47,7 @@
   (fst e)
   (snd e)
   (my-if c t f)
-  (my-with name named-expr body)
+  (my-with list body)
   (app name arg-expr)
   )
 
@@ -76,11 +76,21 @@ representation BNF:
     [(? number?) (num se)]
     [(? symbol?) (id se)]
     [(? boolean?) (bool se)]
-    [(list '+ e1 e2) (add (parse-expr e1) (parse-expr e2))]
-    [(list '< e1 e2) (lt (parse-expr e1) (parse-expr e2))]
-    ; ...
-    [_ (error "not yet implemented")]
+    [(list 'cons e1 e2) (my-cons (parse-expr e1) (parse-expr e2))]
+    [(list 'add1 e) (my-add1 (parse-expr e))]
+    [(list '+ e1 e2) (my-add (parse-expr e1) (parse-expr e2))]
+    [(list '< e1 e2) (my-< (parse-expr e1) (parse-expr e2))]
+    [(list '= e1 e2) (my-= (parse-expr e1) (parse-expr e2))]
+    [(list '! e) (my-! (parse-expr e))]
+    [(list '&& e1 e2) (my-and (parse-expr e1) (parse-expr e2))]
+    [(list '|| e1 e2) (my-or (parse-expr e1) (parse-expr e2))]
+    [(list 'fst e) (fst (parse-expr e))]
+    [(list 'snd e) (snd (parse-expr e))]
+    [(list 'if c t f) (my-if (parse-expr c) (parse-expr t) (parse-expr f))]
+    [(list 'with l e) (my-with (map (cons (car l) (parse-expr (cadr l))) l) (parse-expr e))]
+    [(list f e) (app f (parse-expr e))]
     ))
+
 
 ;; parse-fundef :: s-Fundef -> Fundef
 (define (parse-fundef sf)
