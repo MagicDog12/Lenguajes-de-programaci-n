@@ -12,18 +12,18 @@
 <expr>   ::= <num>
            | <id>
            | <bool>
-           | {my-cons <expr> <expr>}
-           | {my-add1 <expr>}
-           | {my-add <expr> <expr>}
-           | {my-< <expr> <expr>}
-           | {my-= <expr> <expr>}
-           | {my-! <expr> <expr>}
-           | {my-and <expr> <expr>}
-           | {my-or <expr> <expr>}
+           | {cons <expr> <expr>}
+           | {add1 <expr>}
+           | {+ <expr> <expr>}
+           | {< <expr> <expr>}
+           | {= <expr> <expr>}
+           | {! <expr> <expr>}
+           | {&& <expr> <expr>}
+           | {|| <expr> <expr>}
            | {fst <expr>}
            | {snd <expr>}
-           | {my-if <expr> <expr> <expr>}
-           | {my-with {{<id> <expr>}*} <expr>}
+           | {if <expr> <expr> <expr>}
+           | {with {{<id> <expr>}*} <expr>}
            | {<id> <expr>*}
 |#
 (deftype Prog
