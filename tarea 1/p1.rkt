@@ -125,7 +125,7 @@ representation BNF:
                [(pairV lV _) lV])]
     [(snd e) (match (interp e env funs)
                [(pairV _ rV) rV])]
-    [(my-if c t f) (if (interp c env funs) (interp t env funs) (interp f env funs))]
+    [(my-if c t f) (if (boolV-b (interp c env funs)) (interp t env funs) (interp f env funs))]
     [(my-with list body) (cond
                            [(equal? list '()) (interp body env funs)]
                            [else (interp (my-with (cdr list) body)
