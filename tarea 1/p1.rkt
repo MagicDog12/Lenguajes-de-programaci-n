@@ -87,7 +87,7 @@ representation BNF:
     [(list 'fst e) (fst (parse-expr e))]
     [(list 'snd e) (snd (parse-expr e))]
     [(list 'if c t f) (my-if (parse-expr c) (parse-expr t) (parse-expr f))]
-    [(list 'with l e) (my-with (map (cons (car l) (parse-expr (cadr l))) l) (parse-expr e))]
+    [(list 'with l ... e) (my-with (map (cons (car l) (parse-expr (cadr l))) l) (parse-expr e))]
     [(list f e) (app f (parse-expr e))]
     ))
 
