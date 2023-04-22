@@ -125,13 +125,6 @@ representation BNF:
     [(boolV b) (error "Runtime type error: expected Number found Bool" expr)]
     [(pairV lV rV) (error "Runtime type error: expected Number found Pair" expr)]))
 
-;; lookUpNumV :: Expr env funs -> numV-n
-(define (lookUpNumV expr)
-  (match expr
-    [(numV n) n]
-    [(boolV b) (error "Runtime type error: expected Number found Bool" expr)]
-    [(pairV lV rV) (error "Runtime type error: expected Number found Pair" expr)]))
-
 ;; lookUpBoolV :: Expr env funs -> boolV-b
 (define (lookUpBoolV expr)
   (match expr
