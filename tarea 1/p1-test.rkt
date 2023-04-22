@@ -47,6 +47,9 @@
 (test (run '{{define {add2 x} {+ 2 x}}
              {add2 4}}) (numV 6))
 
+(test (run '{{define {add3 x y z} {+ {+ x y} z}}
+             {add3 2 3 4}}) (numV 9))
+
 (test (run '{ ;; Programa de Ejemplo 1
              {define {sum x y z} {+ x {+ y z}}}
              {define {cadr x} {fst {snd x}}}
