@@ -141,14 +141,28 @@
 ;; Casos en que esperabamos un booleano y le damos un booleano:
 ;; caso: !
 (test (run '{{! #t}}) (boolV #f))
+;; caso: &&
+(test (run '{{&& #t #f}}) (boolV #f))
 
 ;; Casos en que esperabamos un booleano y le damos un numero:
 ;; caso: !
 (test/exn (run '{{! 1}}) "Runtime type error: expected Bool found Number")
+;; caso 1: &&
+(test/exn (run '{{&& 3 #t}}) "Runtime type error: expected Bool found Number")
+;; caso 2: &&
+(test/exn (run '{{&& #t 1}}) "Runtime type error: expected Bool found Number")
+;; caso 3: &&
+(test/exn (run '{{&& 3 1}}) "Runtime type error: expected Bool found Number")
 
 ;; Casos en que esperabamos un booleano y le damos un par:
 ;; caso: !
 (test/exn (run '{{! {cons 1 2}}}) "Runtime type error: expected Bool found Pair")
+;; caso 1: &&
+(test/exn (run '{{&& {cons 1 2} #t}}) "Runtime type error: expected Bool found Pair")
+;; caso 2: &&
+(test/exn (run '{{&& #t {cons 1 2}}}) "Runtime type error: expected Bool found Pair")
+;; caso 3: &&
+(test/exn (run '{{&& {cons 1 2} {cons 1 2}}}) "Runtime type error: expected Bool found Pair")
 
 ;; Casos en que esperabamos un par y le damos un par:
 
