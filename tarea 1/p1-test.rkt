@@ -39,7 +39,9 @@
 (test (run '{{if #t {+ 1 2} {+ 3 4}}}) (numV 3))
 (test (run '{{if #f {+ 1 2} {+ 3 4}}}) (numV 7))
 ;; vemos si aplica with
-(test (run '{{with {x 1} {add1 x}}}) (numV 2))
+(test (run '{{with {{x 1}} {add1 x}}}) (numV 2))
+(test (run '{{with {{x 1} {y 2}} {+ x y}}}) (numV 3))
+(test (run '{{with {} {+ 1 2}}}) (numV 3))
 ;; vemos si aplica una funcion
 (test (run '{{define {add2 x} {+ 2 x}}
              {add2 4}}) (numV 6))
