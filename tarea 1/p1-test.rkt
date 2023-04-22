@@ -47,7 +47,7 @@
 (test (run '{{define {add2 x} {+ 2 x}}
              {add2 4}}) (numV 6))
 
-;; Tests moderados:
+;; Tests avanzados:
 ;; Programa de Ejemplo con ningun argumento en el define
 (test (run '{{define {up2} {+ 2 11}}
              {up2}}) (numV 13))
@@ -82,3 +82,22 @@
              })
       (numV 3))
 
+;; Tests con Excepciones:
+
+;; Casos en que esperabamos un numero y le damos un numero:
+;; caso: +
+(test (run '{{+ 0 0}}) (numV 0))
+;; Casos en que esperabamos un numero y le damos un bool:
+;; caso 1: +
+(test/exn (run '{{+ 0 #t}}) "Runtime type error: expected Number found Bool")
+;; caso 2: +
+(test/exn (run '{{+ #f 0}}) "Runtime type error: expected Number found Bool")
+;; caso 3: +
+(test/exn (run '{{+ #f #t}}) "Runtime type error: expected Number found Bool")
+;; Casos en que esperabamos un numero y le damos un par:
+;; caso 1: +
+(test/exn (run '{{+ 0 {cons 1 2}}}) "Runtime type error: expected Number found Pair")
+;; caso 2: +
+(test/exn (run '{{+ {cons 1 2} 0}}) "Runtime type error: expected Number found Pair")
+;; caso 3: +
+(test/exn (run '{{+ {cons 1 2} {cons 1 2}}}) "Runtime type error: expected Number found Pair")
