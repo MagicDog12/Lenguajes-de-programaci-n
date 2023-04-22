@@ -96,7 +96,7 @@ representation BNF:
     [(list 'fst e) (fst (parse-expr e))]
     [(list 'snd e) (snd (parse-expr e))]
     [(list 'if c t f) (my-if (parse-expr c) (parse-expr t) (parse-expr f))]
-    [(list 'with l ... e) (my-with (map (cons (car l) (parse-expr (cadr l))) l) (parse-expr e))]
+    [(list 'with (list (list name named-expr)) e) (my-with (list (list name (parse-expr named-expr))) (parse-expr e))]
     [(list f e) (app f (parse-expr e))]
     ))
 
@@ -129,7 +129,7 @@ representation BNF:
     [(my-with list body) (cond
                            [(equal? list '()) (interp body env funs)]
                            [else (interp (my-with (cdr list) body)
-                                         (extend-env (car (car list)) (interp (cdr (car list)) env funs) env)
+                                         (extend-env (car (car list)) (interp (car (cdr (car list))) env funs) env)
                                          funs)])]
     [(app f e)
      (def (fundef _ arg body) (lookup-fundef f funs))
