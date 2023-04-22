@@ -101,14 +101,21 @@ representation BNF:
     [(list 'snd e) (snd (parse-expr e))]
     [(list 'if c t f) (my-if (parse-expr c) (parse-expr t) (parse-expr f))]
     [(list 'with (list (list name named-expr) ...) e) (my-with (map aux name named-expr) (parse-expr e))]
-    [(list f e) (app f (parse-expr e))]
+    [(list f e ...) (app f (map parse-expr e))]
     ))
 
 
 ;; parse-fundef :: s-Fundef -> Fundef
 (define (parse-fundef sf)
   (match sf
-    [(list 'define (list name args) body) (fundef name args (parse-expr body))]))
+    [(list 'define (list name args ...) body) (fundef name args (parse-expr body))]))
+
+;; auxEnv :: list list env funs -> env
+(define (auxEnv args e envInterp funs envResult)
+  (cond
+    [(equal? args '()) envResult]
+    [else (def extEnv (extend-env (car args) (interp (car e) envInterp funs) envResult))
+          (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]))
 
 
 ;; interp :: Expr -> Env -> List[FunDef] -> Val
@@ -138,7 +145,7 @@ representation BNF:
     [(app f e)
      (def (fundef _ arg body) (lookup-fundef f funs))
      (interp body
-             (extend-env arg (interp e env funs) empty-env)
+             (auxEnv arg e env funs empty-env)
              funs)]
     ))
 
