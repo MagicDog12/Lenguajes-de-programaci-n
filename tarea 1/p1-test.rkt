@@ -1,5 +1,6 @@
 #lang play
 (require "p1.rkt")
+(print-only-errors #t)
 
 ;; Tests básicos:
 ;; recibe solo num
