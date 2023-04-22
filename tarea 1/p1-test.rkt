@@ -85,9 +85,13 @@
 ;; Tests con Excepciones:
 
 ;; Casos en que esperabamos un numero y le damos un numero:
+;; caso: add1
+(test (run '{{add1 0}}) (numV 1))
 ;; caso: +
 (test (run '{{+ 0 0}}) (numV 0))
 ;; Casos en que esperabamos un numero y le damos un bool:
+;; caso: add1
+(test/exn (run '{{add1 #t}}) "Runtime type error: expected Number found Bool")
 ;; caso 1: +
 (test/exn (run '{{+ 0 #t}}) "Runtime type error: expected Number found Bool")
 ;; caso 2: +
@@ -95,6 +99,8 @@
 ;; caso 3: +
 (test/exn (run '{{+ #f #t}}) "Runtime type error: expected Number found Bool")
 ;; Casos en que esperabamos un numero y le damos un par:
+;; caso: add1
+(test/exn (run '{{add1 {cons 0 0}}}) "Runtime type error: expected Number found Pair")
 ;; caso 1: +
 (test/exn (run '{{+ 0 {cons 1 2}}}) "Runtime type error: expected Number found Pair")
 ;; caso 2: +
