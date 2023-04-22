@@ -47,6 +47,11 @@
 (test (run '{{define {add2 x} {+ 2 x}}
              {add2 4}}) (numV 6))
 
+;; Tests moderados:
+;; Programa de Ejemplo con ningun argumento en el define
+(test (run '{{define {up2} {+ 2 11}}
+             {up2}}) (numV 13))
+;; Programa de Ejemplo con más de un argumento en el define
 (test (run '{{define {add3 x y z} {+ {+ x y} z}}
              {add3 2 3 4}}) (numV 9))
 
