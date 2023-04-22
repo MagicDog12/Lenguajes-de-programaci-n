@@ -108,7 +108,7 @@ representation BNF:
 ;; parse-fundef :: s-Fundef -> Fundef
 (define (parse-fundef sf)
   (match sf
-    [(list name args body) (fundef name args (parse-expr body))]))
+    [(list 'define (list name args) body) (fundef name args (parse-expr body))]))
 
 
 ;; interp :: Expr -> Env -> List[FunDef] -> Val
@@ -138,7 +138,7 @@ representation BNF:
     [(app f e)
      (def (fundef _ arg body) (lookup-fundef f funs))
      (interp body
-             (extend-env arg (interp e env funs) (empty-env))
+             (extend-env arg (interp e env funs) empty-env)
              funs)]
     ))
 
