@@ -118,6 +118,13 @@ representation BNF:
           (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]))
 
 
+;; lookUpNumV :: Expr env funs -> numV-n
+(define (lookUpNumV expr)
+  (match expr
+    [(numV n) n]
+    [(boolV b) (error "Runtime type error: expected Number found Bool" expr)]
+    [(pairV lV rV) (error "Runtime type error: expected Number found Pair" expr)]))
+
 ;; interp :: Expr -> Env -> List[FunDef] -> Val
 (define (interp exp env funs)
   (match exp
@@ -125,8 +132,8 @@ representation BNF:
     [(id x) (env-lookup x env)]
     [(bool b) (boolV b)]
     [(my-cons l r) (pairV (interp l env funs) (interp r env funs))]
-    [(my-add1 e) (numV (+ 1 (numV-n (interp e env funs))))]
-    [(my-add l r) (numV (+ (numV-n (interp l env funs)) (numV-n (interp r env funs))))]
+    [(my-add1 e) (numV (+ 1 (lookUpNumV (interp e env funs))))]
+    [(my-add l r) (numV (+ (lookUpNumV (interp l env funs)) (lookUpNumV (interp r env funs))))]
     [(my-< l r) (boolV (< (numV-n (interp l env funs)) (numV-n (interp r env funs))))]
     [(my-= l r) (boolV (= (numV-n (interp l env funs)) (numV-n (interp r env funs))))]
     [(my-! e) (boolV (not (boolV-b (interp e env funs))))]
