@@ -1,6 +1,7 @@
 #lang play
 
 (require "p2.rkt")
+(print-only-errors #t)
 
 (test (typecheck (prog '() (num 5))) (numT))
 (test (typecheck (prog '() (bool #t))) (boolT))
