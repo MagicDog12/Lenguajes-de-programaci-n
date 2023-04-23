@@ -182,7 +182,7 @@ representation BNF:
   (boolT)
   (pairT lT rT))
 
-;; typecheck-expr :: ...
+;; typecheck-expr :: expr -> type
 (define (typecheck-expr e)
   (match e
     [(num n) (numT)]
@@ -191,12 +191,12 @@ representation BNF:
     [_ (error "not yet implemented")]
     ))
 
-;; typecheck-fundef :: ...
+;; typecheck-fundef :: id -> type
 (define (typecheck-fundef f)
   ; ...
   (error "not yet implemented"))
 
-;; typecheck :: ...
+;; typecheck :: prog -> type
 (define (typecheck p)
   (def (prog funs main) p)
   (begin
