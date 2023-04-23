@@ -29,30 +29,10 @@
            | {with {{<id> <expr>}*} <expr>}
            | {<id> <expr>*}
 |#
-(deftype Prog
-  (prog fundefs main))
 
 (deftype Fundef
   (fundef name arg body))
 
-(deftype Expr
-  (num n)
-  (id x)
-  (bool b)
-  (my-cons l r)
-  (my-add1 e)
-  (my-add l r)
-  (my-< l r)
-  (my-= l r)
-  (my-! e)
-  (my-and l r)
-  (my-or l r)
-  (fst e)
-  (snd e)
-  (my-if c t f)
-  (my-with list body)
-  (app name arg-expr)
-  )
 
 ; busca funcion por nombre
 (define (lookup-fundef f funs)
@@ -76,11 +56,6 @@ representation BNF:
   (boolV b)
   (pairV lV rV))
 
-;; parse :: s-Prog -> Prog
-(define (parse sp)
-  (match sp
-    [(list ds ... e) (prog (map parse-fundef ds) (parse-expr e))] ;; ds es la lista de definiciones, e es la expresion principal
-    ))
 
 ;; aux :: id s-Expr -> (my-cons id Expr)
 (define (aux id se)
@@ -178,9 +153,6 @@ representation BNF:
              funs)]
     ))
 
-(define (run sp)
-  (def (prog funs main) (parse sp))
-  (interp main empty-env funs))
 
 #| LUEGO MODIFIQUELO SIGUIENDO LAS INSTRUCCIONES |#
 ;;;;
