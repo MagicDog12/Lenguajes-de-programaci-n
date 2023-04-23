@@ -160,7 +160,7 @@ representation BNF:
     [(my-! e) (boolV (not (lookUpBoolV (interp e env funs))))]
     [(my-and l r) (boolV (and (lookUpBoolV (interp l env funs)) (lookUpBoolV (interp r env funs))))]
     [(my-or l r) (boolV (or (lookUpBoolV (interp l env funs)) (lookUpBoolV (interp r env funs))))]
-    [(fst e) (lookUpPairVfst (interp e env funs))])]
+    [(fst e) (lookUpPairVfst (interp e env funs))]
     [(snd e) (lookUpPairVsnd (interp e env funs))]
     [(my-if c t f) (if (lookUpBoolV (interp c env funs)) (interp t env funs) (interp f env funs))]
     [(my-with list body) (cond
