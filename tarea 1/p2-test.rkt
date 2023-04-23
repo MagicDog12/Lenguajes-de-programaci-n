@@ -3,9 +3,39 @@
 (require "p2.rkt")
 (print-only-errors #t)
 
+;; Tests básicos:
+;; Caso num
 (test (typecheck (prog '() (num 5))) (numT))
+;; Caso bool
 (test (typecheck (prog '() (bool #t))) (boolT))
-
+;; Caso cons
+(test (typecheck (prog '() (my-cons (num 1) (num 2)))) (pairT (numT) (numT)))
+(test (typecheck (prog '() (my-cons (bool #f) (bool #f)))) (pairT (boolT) (boolT)))
+;; Caso add1
+(test (typecheck (prog '() (my-add1 (num 1)))) (numT))
+;; Caso +
+(test (typecheck (prog '() (my-add (num 1) (num 2)))) (numT))
+;; Caso <
+(test (typecheck (prog '() (my-< (num 1) (num 2)))) (boolT))
+;; Caso =
+(test (typecheck (prog '() (my-= (num 1) (num 2)))) (boolT))
+;; Caso !
+(test (typecheck (prog '() (my-! (bool #f)))) (boolT))
+;; Caso &&
+(test (typecheck (prog '() (my-and (bool #f) (bool #t)))) (boolT))
+;; Caso ||
+(test (typecheck (prog '() (my-or (bool #f) (bool #t)))) (boolT))
+;; Caso fst
+(test (typecheck (prog '() (fst (my-cons (num 4) (num 6))))) (numT))
+(test (typecheck (prog '() (fst (my-cons (bool #f) (bool #t))))) (boolT))
+;; Caso snd
+(test (typecheck (prog '() (snd (my-cons (num 4) (num 6))))) (numT))
+(test (typecheck (prog '() (snd (my-cons (bool #f) (bool #t))))) (boolT))
+;; Caso if
+(test (typecheck (prog '() (fst (my-cons (num 4) (num 6))))) (numT))
+(test (typecheck (prog '() (my-if (my-cons (bool #f) (bool #t))))) (boolT))
+;; Caso with (importante)
+;; Caso app
 
 
 (test (typecheck (parse '{ ; Programa de ejemplo 1
