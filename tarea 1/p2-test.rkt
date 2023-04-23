@@ -32,8 +32,10 @@
 (test (typecheck (prog '() (snd (my-cons (num 4) (num 6))))) (numT))
 (test (typecheck (prog '() (snd (my-cons (bool #f) (bool #t))))) (boolT))
 ;; Caso if
-(test (typecheck (prog '() (fst (my-cons (num 4) (num 6))))) (numT))
-(test (typecheck (prog '() (my-if (my-cons (bool #f) (bool #t))))) (boolT))
+(test (typecheck (prog '() (my-if (bool #t) (num 1) (num 2)))) (numT))
+(test (typecheck (prog '() (my-if (bool #f) (bool #t) (bool #f)))) (boolT))
+(test (typecheck (prog '() (my-if (bool #t) (my-cons (num 1) (num 2)) (my-cons (bool #t) (bool #f))))) (pairT (boolT) (boolT)))
+(test (typecheck (prog '() (my-if (bool #f) (my-cons (num 1) (num 2)) (my-cons (bool #t) (bool #f))))) (pairT (boolT) (boolT)))
 ;; Caso with (importante)
 ;; Caso app
 
