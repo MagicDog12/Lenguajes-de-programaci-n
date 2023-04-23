@@ -187,11 +187,17 @@
 ;; Casos en que esperabamos un par y le damos un par:
 ;; caso: fst
 (test (run '{{fst {cons 3 4}}}) (numV 3))
+;; caso: snd
+(test (run '{{snd {cons 3 4}}}) (numV 4))
 
 ;; Casos en que esperabamos un par y le damos un numero:
 ;; caso: fst
 (test/exn (run '{{fst 2}}) "Runtime type error: expected Pair found Number")
+;; caso: snd
+(test/exn (run '{{snd 2}}) "Runtime type error: expected Pair found Number")
 
 ;; Casos en que esperabamos un par y le damos un booleano:
 ;; caso: fst
 (test/exn (run '{{fst #t}}) "Runtime type error: expected Pair found Bool")
+;; caso: snd
+(test/exn (run '{{snd #t}}) "Runtime type error: expected Pair found Bool")
