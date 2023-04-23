@@ -198,9 +198,76 @@ representation BNF:
   (match e
     [(num n) (numT)]
     [(bool b) (boolT)]
-    ; ...
-    [_ (error "not yet implemented")]
-    ))
+    [(my-cons l r) (pairT (typecheck-expr l) (typecheck-expr r))]
+    [(my-add1 e) (match (typecheck-expr e)
+                   [(numT) (numT)]
+                   [(boolT) (error "Static type error: expected Num found Bool")]
+                   [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+    [(my-add l r) (match (typecheck-expr l)
+                      [(numT) (match (typecheck-expr r)
+                                [(numT) (numT)]
+                                [(boolT) (error "Static type error: expected Num found Bool")]
+                                [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+                    [(boolT) (error "Static type error: expected Num found Bool")]
+                    [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+    [(my-< l r) (match (typecheck-expr l)
+                      [(numT) (match (typecheck-expr r)
+                                [(numT) (boolT)]
+                                [(boolT) (error "Static type error: expected Num found Bool")]
+                                [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+                    [(boolT) (error "Static type error: expected Num found Bool")]
+                    [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+    [(my-= l r) (match (typecheck-expr l)
+                      [(numT) (match (typecheck-expr r)
+                                [(numT) (boolT)]
+                                [(boolT) (error "Static type error: expected Num found Bool")]
+                                [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+                    [(boolT) (error "Static type error: expected Num found Bool")]
+                    [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+    [(my-! e) (match (typecheck-expr e)
+                   [(numT) (error "Static type error: expected Bool found Num")]
+                   [(boolT) (boolT)]
+                   [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
+    [(my-and l r) (match (typecheck-expr l)
+                    [(numT) (error "Static type error: expected Bool found Num")]
+                    [(boolT) (match (typecheck-expr r)
+                                [(numT) (error "Static type error: expected Bool found Num")]
+                                [(boolT) (boolT)]
+                                [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
+                    [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
+    [(my-or l r) (match (typecheck-expr l)
+                    [(numT) (error "Static type error: expected Bool found Num")]
+                    [(boolT) (match (typecheck-expr r)
+                                [(numT) (error "Static type error: expected Bool found Num")]
+                                [(boolT) (boolT)]
+                                [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
+                    [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
+    [(fst e) (match (typecheck-expr e)
+               [(numT) (error "Static type error: expected Pair found Num")]
+               [(boolT) (error "Static type error: expected Pair found Bool")]
+               [(pairT lT rT) lT])]
+    [(snd e) (match (typecheck-expr e)
+               [(numT) (error "Static type error: expected Pair found Num")]
+               [(boolT) (error "Static type error: expected Pair found Bool")]
+               [(pairT lT rT) rT])]
+    [(my-if c t f) (match (typecheck-expr c)
+                     [(numT) (error "Static type error: expected Bool found Num")]
+                     [(boolT) (match (typecheck-expr t)
+                                [(numT) (match (typecheck-expr f)
+                                          [(numT) (numT)]
+                                          [(boolT) (error "Static type error: expected Num found Bool")]
+                                          [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+                                [(boolT) (match (typecheck-expr f)
+                                           [(numT) (error "Static type error: expected Bool found Num")]
+                                           [(boolT) (boolT)]
+                                           [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
+                                [(pairT lT rT) (match (typecheck-expr f)
+                                                 [(numT) (error "Static type error: expected Pair found Num")]
+                                                 [(boolT) (error "Static type error: expected Pair found Bool")]
+                                                 [(pairT lT rT) (pairT lT rT)])])]
+                     [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]))
+    ;;[(my-with list body)]
+    ;;[(app name arg-expr)]))
 
 ;; typecheck-fundef :: fundef -> type
 (define (typecheck-fundef f)
