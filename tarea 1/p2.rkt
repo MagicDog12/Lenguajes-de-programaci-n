@@ -29,10 +29,30 @@
            | {with {{<id> <expr>}*} <expr>}
            | {<id> <expr>*}
 |#
+(deftype Prog
+  (prog fundefs main))
 
 (deftype Fundef
   (fundef name arg body))
 
+(deftype Expr
+  (num n)
+  (id x)
+  (bool b)
+  (my-cons l r)
+  (my-add1 e)
+  (my-add l r)
+  (my-< l r)
+  (my-= l r)
+  (my-! e)
+  (my-and l r)
+  (my-or l r)
+  (fst e)
+  (snd e)
+  (my-if c t f)
+  (my-with list body)
+  (app name arg-expr)
+  )
 
 ; busca funcion por nombre
 (define (lookup-fundef f funs)
@@ -56,6 +76,11 @@ representation BNF:
   (boolV b)
   (pairV lV rV))
 
+;; parse :: s-Prog -> Prog
+(define (parse sp)
+  (match sp
+    [(list ds ... e) (prog (map parse-fundef ds) (parse-expr e))] ;; ds es la lista de definiciones, e es la expresion principal
+    ))
 
 ;; aux :: id s-Expr -> (my-cons id Expr)
 (define (aux id se)
@@ -153,20 +178,6 @@ representation BNF:
              funs)]
     ))
 
-
-#| LUEGO MODIFIQUELO SIGUIENDO LAS INSTRUCCIONES |#
-;;;;
-
-;;;; luego de copiar su codigo elimine las definiciones de Exp, Prog, parse y run
-(deftype Exp
-  (num n)
-  (bool b))
-
-(deftype Prog
-  (prog funs main))
-(define (parse p) (error "replace parse with your own implementation"))
-;;;;
-
 #|
 <fundef> ::= {define {<id> {arg}*} [: <type>] <expr>}
 
@@ -191,7 +202,7 @@ representation BNF:
     [_ (error "not yet implemented")]
     ))
 
-;; typecheck-fundef :: id -> type
+;; typecheck-fundef :: fundef -> type
 (define (typecheck-fundef f)
   ; ...
   (error "not yet implemented"))
