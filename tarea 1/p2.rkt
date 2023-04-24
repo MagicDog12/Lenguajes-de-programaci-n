@@ -83,8 +83,18 @@ representation BNF:
     ))
 
 ;; aux :: id s-Expr -> (my-cons id Expr)
-(define (aux id se)
-  (list id (parse-expr se)))
+(define (aux id type se)
+  (list id type (parse-expr se)))
+
+(define (type-check-aux se)
+  (typecheck-expr (parse-expr se)))
+
+;; parse-type :: s-Type -> Type
+(define (parse-type st)
+  (match st
+    ['Num (numT)]
+    ['Bool (boolT)]
+    [(list 'Pair l r) (pairT (parse-type l) (parse-type r))]))
 
 ;; parse-expr :: s-Expr -> Expr
 (define (parse-expr se)
@@ -103,7 +113,10 @@ representation BNF:
     [(list 'fst e) (fst (parse-expr e))]
     [(list 'snd e) (snd (parse-expr e))]
     [(list 'if c t f) (my-if (parse-expr c) (parse-expr t) (parse-expr f))]
-    [(list 'with (list (list name ': type named-expr) ...) e) (my-with (map aux name named-expr) (parse-expr e))]
+    [(list 'with (list (list name named-expr) ...) e) (def type (map type-check-aux named-expr))
+                                                      (my-with (map aux name type named-expr) (parse-expr e))]
+    [(list 'with (list (list name ': type named-expr) ...) e) (def new-type (map parse-type type))
+                                                              (my-with (map aux name new-type named-expr) (parse-expr e))]
     [(list f e ...) (app f (map parse-expr e))]
     ))
 
@@ -193,6 +206,23 @@ representation BNF:
   (boolT)
   (pairT lT rT))
 
+;; type-error :: type type -> #t / error
+(define (type-error my-type t)
+  (match my-type
+    [(numT) (match t
+              [(numT) #t]
+              [(boolT) (error "Static type error: expected Num found Bool")]
+              [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+    [(boolT) (match t
+              [(numT) (error "Static type error: expected Bool found Num")]
+              [(boolT) #t]
+              [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
+    [(pairT lT rT) (match t
+              [(numT) (error "Static type error: expected Pair found Num")]
+              [(boolT) (error "Static type error: expected Pair found Bool")]
+              [(pairT lT2 rT2) (def aux-lT (type-error lT lT2))
+                             (type-error rT rT2)])]))
+
 ;; typecheck-expr :: expr -> type
 (define (typecheck-expr e [antes (numT)])
   (match e
@@ -200,26 +230,20 @@ representation BNF:
     [(bool b) (boolT)]
     [(id x) antes]
     [(my-cons l r) (pairT (typecheck-expr l) (typecheck-expr r))]
-    [(my-add1 e) (match (typecheck-expr e)
-                   [(numT) (numT)]
-                   [(boolT) (error "Static type error: expected Num found Bool")]
-                   [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-    [(my-add l r) (match (typecheck-expr l)
-                      [(numT) (match (typecheck-expr r)
-                                [(numT) (numT)]
-                                [(boolT) (error "Static type error: expected Num found Bool")]
-                                [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-                    [(boolT) (error "Static type error: expected Num found Bool")]
-                    [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
+    [(my-add1 e) (cond
+                   [(type-error (numT) (typecheck-expr e)) (numT)])]
+    [(my-add l r) (cond
+                    [(type-error (numT) (typecheck-expr l)) (cond
+                                                              [(type-error (numT) (typecheck-expr r)) (numT)])])]
     [(my-< l r) (match (typecheck-expr l (boolT))
-                      [(numT) (match (typecheck-expr r)
+                      [(numT) (match (typecheck-expr r (boolT))
                                 [(numT) (boolT)]
                                 [(boolT) (error "Static type error: expected Num found Bool")]
                                 [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
                     [(boolT) (error "Static type error: expected Num found Bool")]
                     [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
     [(my-= l r) (match (typecheck-expr l (boolT))
-                      [(numT) (match (typecheck-expr r)
+                      [(numT) (match (typecheck-expr r (boolT))
                                 [(numT) (boolT)]
                                 [(boolT) (error "Static type error: expected Num found Bool")]
                                 [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
@@ -231,14 +255,14 @@ representation BNF:
                    [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
     [(my-and l r) (match (typecheck-expr l (boolT))
                     [(numT) (error "Static type error: expected Bool found Num")]
-                    [(boolT) (match (typecheck-expr r)
+                    [(boolT) (match (typecheck-expr r (boolT))
                                 [(numT) (error "Static type error: expected Bool found Num")]
                                 [(boolT) (boolT)]
                                 [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
                     [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
     [(my-or l r) (match (typecheck-expr l (boolT))
                     [(numT) (error "Static type error: expected Bool found Num")]
-                    [(boolT) (match (typecheck-expr r)
+                    [(boolT) (match (typecheck-expr r (boolT))
                                 [(numT) (error "Static type error: expected Bool found Num")]
                                 [(boolT) (boolT)]
                                 [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
@@ -273,9 +297,9 @@ representation BNF:
                             (def argumento-declarado (car (cdr (cdr (car list)))))
                             (def tipo-declarado (car (cdr (car list))))
                             (cond
-                                   [(equal? (typecheck-expr argumento-declarado) tipo-declarado)
+                                   [(type-error tipo-declarado (typecheck-expr argumento-declarado))
                                     (typecheck-expr (my-with (cdr list) body))]
-                                   [else (error "Static type error: expected " tipo-declarado "found " (typecheck-expr argumento-declarado))])])]))
+                                   [else (error "te pasaste")])])]))
     ;;[(app name arg-expr)]))
 
 ;; typecheck-fundef :: fundef -> type
