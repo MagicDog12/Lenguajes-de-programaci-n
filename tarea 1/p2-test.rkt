@@ -37,6 +37,7 @@
 (test (typecheck (prog '() (my-if (bool #t) (my-cons (num 1) (num 2)) (my-cons (bool #t) (bool #f))))) (pairT (boolT) (boolT)))
 (test (typecheck (prog '() (my-if (bool #f) (my-cons (num 1) (num 2)) (my-cons (bool #t) (bool #f))))) (pairT (boolT) (boolT)))
 ;; Caso with (importante)
+(test (typecheck (prog '() (my-with (list (list 'x (numT) (num 1))) (my-add1 (id 'x))))) (numT))
 ;; Caso app
 
 
