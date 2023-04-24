@@ -103,7 +103,7 @@ representation BNF:
     [(list 'fst e) (fst (parse-expr e))]
     [(list 'snd e) (snd (parse-expr e))]
     [(list 'if c t f) (my-if (parse-expr c) (parse-expr t) (parse-expr f))]
-    [(list 'with (list (list name named-expr) ...) e) (my-with (map aux name named-expr) (parse-expr e))]
+    [(list 'with (list (list name ': type named-expr) ...) e) (my-with (map aux name named-expr) (parse-expr e))]
     [(list f e ...) (app f (map parse-expr e))]
     ))
 
