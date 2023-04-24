@@ -33,7 +33,7 @@
   (prog fundefs main))
 
 (deftype Fundef
-  (fundef name arg body))
+  (fundef name arg tbody body))
 
 (deftype Expr
   (num n)
@@ -121,10 +121,25 @@ representation BNF:
     ))
 
 
+;; parse-args :: s-args -> args
+(define (parse-args sa st)
+  (list sa (parse-type st)))
+
+(define (make-env-args args env)
+  (def arg (car args))
+  (def type (car (cdr args)))
+  (extend-env arg type env))
+
 ;; parse-fundef :: s-Fundef -> Fundef
 (define (parse-fundef sf)
   (match sf
-    [(list 'define (list name args ...) body) (fundef name args (parse-expr body))]))
+    [(list 'define (list name (list args ': types) ...) body) (def args-new (map parse-args args types))
+                                              (def newEnv (foldl make-env-args empty-env args-new))
+                                              (def tbody (typecheck-expr (parse-expr body) newEnv))
+                                              (fundef name args-new tbody (parse-expr body))]
+    [(list 'define (list name (list args ': types) ...) ': tbody body) (def args-new (map parse-args args types))
+                                                       (def tbody-new (parse-type tbody))
+                                                       (fundef name args-new tbody-new (parse-expr body))]))
 
 ;; auxEnv :: list list env funs -> env
 (define (auxEnv args e envInterp funs envResult)
@@ -185,7 +200,7 @@ representation BNF:
                                          (extend-env (car (car list)) (interp (car (cdr (car list))) env funs) env)
                                          funs)])]
     [(app f e)
-     (def (fundef _ arg body) (lookup-fundef f funs))
+     (def (fundef _ arg _ body) (lookup-fundef f funs))
      (interp body
              (auxEnv arg e env funs empty-env)
              funs)]
@@ -224,93 +239,140 @@ representation BNF:
                              (type-error rT rT2)])]))
 
 ;; typecheck-expr :: expr -> type
-(define (typecheck-expr e [antes (numT)])
+(define (typecheck-expr e [env empty-env])
   (match e
     [(num n) (numT)]
     [(bool b) (boolT)]
-    [(id x) antes]
-    [(my-cons l r) (pairT (typecheck-expr l) (typecheck-expr r))]
+    [(id x) (env-lookup x env)]
+    [(my-cons l r) (pairT (typecheck-expr l env) (typecheck-expr r env))]
     [(my-add1 e) (cond
-                   [(type-error (numT) (typecheck-expr e)) (numT)])]
+                   [(type-error (numT) (typecheck-expr e env)) (numT)])]
     [(my-add l r) (cond
-                    [(type-error (numT) (typecheck-expr l)) (cond
-                                                              [(type-error (numT) (typecheck-expr r)) (numT)])])]
-    [(my-< l r) (match (typecheck-expr l (boolT))
-                      [(numT) (match (typecheck-expr r (boolT))
+                    [(type-error (numT) (typecheck-expr l env)) (cond
+                                                              [(type-error (numT) (typecheck-expr r env)) (numT)])])]
+    [(my-< l r) (match (typecheck-expr l env)
+                      [(numT) (match (typecheck-expr r env)
                                 [(numT) (boolT)]
                                 [(boolT) (error "Static type error: expected Num found Bool")]
                                 [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
                     [(boolT) (error "Static type error: expected Num found Bool")]
                     [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-    [(my-= l r) (match (typecheck-expr l (boolT))
-                      [(numT) (match (typecheck-expr r (boolT))
+    [(my-= l r) (match (typecheck-expr l env)
+                      [(numT) (match (typecheck-expr r env)
                                 [(numT) (boolT)]
                                 [(boolT) (error "Static type error: expected Num found Bool")]
                                 [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
                     [(boolT) (error "Static type error: expected Num found Bool")]
                     [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-    [(my-! e) (match (typecheck-expr e (boolT))
+    [(my-! e) (match (typecheck-expr e env)
                    [(numT) (error "Static type error: expected Bool found Num")]
                    [(boolT) (boolT)]
                    [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-    [(my-and l r) (match (typecheck-expr l (boolT))
+    [(my-and l r) (match (typecheck-expr l env)
                     [(numT) (error "Static type error: expected Bool found Num")]
-                    [(boolT) (match (typecheck-expr r (boolT))
+                    [(boolT) (match (typecheck-expr r env)
                                 [(numT) (error "Static type error: expected Bool found Num")]
                                 [(boolT) (boolT)]
                                 [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
                     [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-    [(my-or l r) (match (typecheck-expr l (boolT))
+    [(my-or l r) (match (typecheck-expr l env)
                     [(numT) (error "Static type error: expected Bool found Num")]
-                    [(boolT) (match (typecheck-expr r (boolT))
+                    [(boolT) (match (typecheck-expr r env)
                                 [(numT) (error "Static type error: expected Bool found Num")]
                                 [(boolT) (boolT)]
                                 [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
                     [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-    [(fst e) (match (typecheck-expr e)
+    [(fst e) (match (typecheck-expr e env)
                [(numT) (error "Static type error: expected Pair found Num")]
                [(boolT) (error "Static type error: expected Pair found Bool")]
                [(pairT lT rT) lT])]
-    [(snd e) (match (typecheck-expr e)
+    [(snd e) (match (typecheck-expr e env)
                [(numT) (error "Static type error: expected Pair found Num")]
                [(boolT) (error "Static type error: expected Pair found Bool")]
                [(pairT lT rT) rT])]
-    [(my-if c t f) (match (typecheck-expr c)
+    [(my-if c t f) (match (typecheck-expr c env)
                      [(numT) (error "Static type error: expected Bool found Num")]
-                     [(boolT) (match (typecheck-expr t)
-                                [(numT) (match (typecheck-expr f)
+                     [(boolT) (match (typecheck-expr t env)
+                                [(numT) (match (typecheck-expr f env)
                                           [(numT) (numT)]
                                           [(boolT) (error "Static type error: expected Num found Bool")]
                                           [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-                                [(boolT) (match (typecheck-expr f)
+                                [(boolT) (match (typecheck-expr f env)
                                            [(numT) (error "Static type error: expected Bool found Num")]
                                            [(boolT) (boolT)]
                                            [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-                                [(pairT lT rT) (match (typecheck-expr f)
+                                [(pairT lT rT) (match (typecheck-expr f env)
                                                  [(numT) (error "Static type error: expected Pair found Num")]
                                                  [(boolT) (error "Static type error: expected Pair found Bool")]
                                                  [(pairT lT rT) (pairT lT rT)])])]
                      [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
     [(my-with list body) (cond
-                           [(equal? list '()) (typecheck-expr body)]
+                           [(equal? list '()) (typecheck-expr body env)]
                            [else
+                            (def id-declarado (car(car list)))
                             (def argumento-declarado (car (cdr (cdr (car list)))))
                             (def tipo-declarado (car (cdr (car list))))
                             (cond
-                                   [(type-error tipo-declarado (typecheck-expr argumento-declarado))
-                                    (typecheck-expr (my-with (cdr list) body))]
-                                   [else (error "te pasaste")])])]))
-    ;;[(app name arg-expr)]))
+                                   [(type-error tipo-declarado (typecheck-expr argumento-declarado env))
+                                    (def newEnv (extend-env id-declarado tipo-declarado env))
+                                    (typecheck-expr (my-with (cdr list) body) newEnv)]
+                                   [else (error "te pasaste")])])]
+    [(app name arg-expr) (error "aun no se implementa el app del typecheck-expr")]))
 
 ;; typecheck-fundef :: fundef -> type
-(define (typecheck-fundef f)
-  ; ...
-  (error "not yet implemented"))
+(define (typecheck-fundef f env)
+  (def (fundef name arg tbody body) f)
+  (def newEnv (foldl make-env-args env arg))
+  (cond
+     [(type-error tbody (typecheck-expr body newEnv)) newEnv]
+     [else (error "pasó algo")]))
 
 ;; typecheck :: prog -> type
 (define (typecheck p)
   (def (prog funs main) p)
-  (begin
-    (map typecheck-fundef funs)
-    (typecheck-expr main)))
+  (def newEnv (foldl typecheck-fundef empty-env funs))
+  (typecheck-expr main newEnv))
 
+;; EJEMPLOS VOLATILES
+
+(def p1-no-parse '{
+                   {define {id {x : Num}} : Num {< x 3}}
+                   {id #t}})
+(def p1-parse (parse p1-no-parse))
+(def (prog funs1 main1) p1-parse)
+
+
+(def p2-no-parse '{
+                   {define {id {x : Num}} x}
+                   {id 5}})
+(def p2-parse (parse p2-no-parse))
+(def (prog funs2 main2) p2-parse)
+
+(def p3-no-parse '{
+                   {define {id {x : Num} {y : Num}} {+ x y}}
+                   {id 5 3}})
+(def p3-parse (parse p3-no-parse))
+(def (prog funs3 main3) p3-parse)
+
+(def p4-no-parse '{
+                   {define {id {x : Num}} : Num x}
+                   {id 5}})
+(def p4-parse (parse p4-no-parse))
+(def (prog funs4 main4) p4-parse)
+
+(def p5-no-parse '{
+                   {define {id {x : Num} {y : Num}} : Bool {+ x y}}
+                   {id 5 3}})
+(def p5-parse (parse p5-no-parse))
+(def (prog funs5 main5) p5-parse)
+
+(def p (parse '{ ; Programa de ejemplo 4
+                          {define {id {x : Num}} x}
+                          {id 5}
+                          }))
+(def (prog funs main) p)
+(def primero (car funs))
+(def resto (cdr funs))
+(def (fundef name arg tbody body) primero)
+(def env empty-env)
+(def newEnv (foldl make-env-args env arg))
