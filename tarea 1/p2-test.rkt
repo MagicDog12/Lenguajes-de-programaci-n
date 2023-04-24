@@ -37,7 +37,24 @@
 (test (typecheck (prog '() (my-if (bool #t) (my-cons (num 1) (num 2)) (my-cons (bool #t) (bool #f))))) (pairT (boolT) (boolT)))
 (test (typecheck (prog '() (my-if (bool #f) (my-cons (num 1) (num 2)) (my-cons (bool #t) (bool #f))))) (pairT (boolT) (boolT)))
 ;; Caso with (importante)
+;; Caso sin argumentos
+(test (typecheck (prog '() (my-with '() (my-add (num 1) (num 2))))) (numT))
+;; Caso con un argumento no declarado
+(test (typecheck (parse '{
+                          {with {{x 1}}
+                                {add1 x}}
+                          }))
+      (numT))
+;; Caso con un argumento declarado
 (test (typecheck (prog '() (my-with (list (list 'x (numT) (num 1))) (my-add1 (id 'x))))) (numT))
+;; Caso con dos argumentos declarados
+(test (typecheck (prog '() (my-with (list (list 'x (numT) (num 1)) (list 'y (numT) (num 2))) (my-add (id 'x) (id 'y))))) (numT))
+;; Caso con dos argumentos no declarados
+(test (typecheck (parse '{
+                          {with {{x 1} {y 2}}
+                                {+ x y}}
+                          }))
+      (numT))
 ;; Caso app
 
 
