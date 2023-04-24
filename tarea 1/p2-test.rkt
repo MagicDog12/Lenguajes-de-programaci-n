@@ -94,6 +94,13 @@
                           }))
       (numT))
 
+(test (typecheck (parse '{ ; Programa de ejemplo 6
+                          {define {add-pair {p : {Pair Num Num}} {x : Num}} : {Pair Num Num}
+                            {cons {+ {fst p} x} {+ {snd p} x}}}
+                          {add-pair {cons 1 1} 1}
+                          }))
+      (pairT (numT) (numT)))
+
 (test (typecheck (parse '{3})) (numT))
 
 (test  (typecheck (parse '{{define {f {p : Bool}} {if p 23 42}}
