@@ -56,7 +56,19 @@
                           }))
       (numT))
 ;; Caso app
-
+;; Caso definicion de funcion
+;; expresion del cuerpo tiene el mismo tipo que el tipo de retorno declarado?
+;; el tipo de retorno no se especifica
+;; Caso con operador < ... agregar mas
+;; = solo compara numeros
+;; expresion if condicion es de tipo bool
+;; expresion if ambas ramas deben tener el mismo tipo
+;; tipo resultante de la expresion if es el tipo de las ramas
+;; En la app el numero de argumentos coincide
+;; En la app los tipos de los argumentos coinciden con los tipos esperados
+;; El tipo resultante de una app es el tipo de retorno de la funcion
+;; Errores de identificadores libres
+;; Errores de funciones no definidas
 
 (test (typecheck (parse '{ ; Programa de ejemplo 1
                           {with {{x : Num 5} {y : Num 10}}
