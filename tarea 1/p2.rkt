@@ -145,7 +145,7 @@ representation BNF:
 (define (auxEnv args e envInterp funs envResult)
   (cond
     [(equal? args '()) envResult]
-    [else (def extEnv (extend-env (car args) (interp (car e) envInterp funs) envResult))
+    [else (def extEnv (extend-env (car(car args)) (interp (car e) envInterp funs) envResult))
           (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]))
 
 
@@ -356,3 +356,9 @@ representation BNF:
   (def (prog funs main) p)
   (def newEnv (foldl typecheck-fundef empty-env funs))
   (typecheck-expr main newEnv funs))
+
+;; run :: sp -> Val
+(define (run sp)
+  (def p (parse sp))
+  (def (prog funs main) p)
+  (begin (typecheck p) (interp main empty-env funs)))
