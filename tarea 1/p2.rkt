@@ -87,7 +87,7 @@ representation BNF:
   (list id type (parse-expr se)))
 
 (define (type-check-aux se)
-  (typecheck-expr (parse-expr se)))
+  (typecheck-expr (parse-expr se) empty-env empty-env))
 
 ;; parse-type :: s-Type -> Type
 (define (parse-type st)
@@ -135,7 +135,7 @@ representation BNF:
   (match sf
     [(list 'define (list name (list args ': types) ...) body) (def args-new (map parse-args args types))
                                               (def newEnv (foldl make-env-args empty-env args-new))
-                                              (def tbody (typecheck-expr (parse-expr body) newEnv))
+                                              (def tbody (typecheck-expr (parse-expr body) newEnv empty-env))
                                               (fundef name args-new tbody (parse-expr body))]
     [(list 'define (list name (list args ': types) ...) ': tbody body) (def args-new (map parse-args args types))
                                                        (def tbody-new (parse-type tbody))
@@ -239,99 +239,123 @@ representation BNF:
                              (type-error rT rT2)])]))
 
 ;; typecheck-expr :: expr -> type
-(define (typecheck-expr e [env empty-env])
+(define (typecheck-expr e env funs)
   (match e
     [(num n) (numT)]
     [(bool b) (boolT)]
     [(id x) (env-lookup x env)]
-    [(my-cons l r) (pairT (typecheck-expr l env) (typecheck-expr r env))]
-    [(my-add1 e) (cond
-                   [(type-error (numT) (typecheck-expr e env)) (numT)])]
-    [(my-add l r) (cond
-                    [(type-error (numT) (typecheck-expr l env)) (cond
-                                                              [(type-error (numT) (typecheck-expr r env)) (numT)])])]
-    [(my-< l r) (match (typecheck-expr l env)
-                      [(numT) (match (typecheck-expr r env)
+    [(my-cons l r) (pairT (typecheck-expr l env funs) (typecheck-expr r env funs))]
+    [(my-add1 e) (match (typecheck-expr e env funs)
+                   [(numT) (numT)]
+                   [(boolT) (error "Static type error: operator add1 expected Num found Bool")]
+                   [(pairT lT rT) (error "Static type error: operator add1 expected Num found Pair")])]
+    [(my-add l r) (match (typecheck-expr l env funs)
+                    [(numT) (match (typecheck-expr r env funs)
+                              [(numT) (numT)]
+                              [(boolT) (error "Static type error: operator + expected Num found Bool")]
+                              [(pairT lT rT) (error "Static type error: operator add1 expected Num found Pair")])]
+                    [(boolT) (error "Static type error: operator + expected Num found Bool")]
+                    [(pairT lT rT) (error "Static type error: operator add1 expected Num found Pair")])]
+    [(my-< l r) (match (typecheck-expr l env funs)
+                      [(numT) (match (typecheck-expr r env funs)
                                 [(numT) (boolT)]
-                                [(boolT) (error "Static type error: expected Num found Bool")]
-                                [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-                    [(boolT) (error "Static type error: expected Num found Bool")]
-                    [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-    [(my-= l r) (match (typecheck-expr l env)
-                      [(numT) (match (typecheck-expr r env)
+                                [(boolT) (error "Static type error: operator < expected Num found Bool")]
+                                [(pairT lT rT) (error "Static type error: operator < expected Num found Pair")])]
+                    [(boolT) (error "Static type error: operator < expected Num found Bool")]
+                    [(pairT lT rT) (error "Static type error: operator < expected Num found Pair")])]
+    [(my-= l r) (match (typecheck-expr l env funs)
+                      [(numT) (match (typecheck-expr r env funs)
                                 [(numT) (boolT)]
-                                [(boolT) (error "Static type error: expected Num found Bool")]
-                                [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-                    [(boolT) (error "Static type error: expected Num found Bool")]
-                    [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-    [(my-! e) (match (typecheck-expr e env)
-                   [(numT) (error "Static type error: expected Bool found Num")]
+                                [(boolT) (error "Static type error: operator = expected Num found Bool")]
+                                [(pairT lT rT) (error "Static type error: operator = expected Num found Pair")])]
+                    [(boolT) (error "Static type error: operator = expected Num found Bool")]
+                    [(pairT lT rT) (error "Static type error: operator = expected Num found Pair")])]
+    [(my-! e) (match (typecheck-expr e env funs)
+                   [(numT) (error "Static type error: operator ! expected Bool found Num")]
                    [(boolT) (boolT)]
-                   [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-    [(my-and l r) (match (typecheck-expr l env)
-                    [(numT) (error "Static type error: expected Bool found Num")]
-                    [(boolT) (match (typecheck-expr r env)
-                                [(numT) (error "Static type error: expected Bool found Num")]
+                   [(pairT lT rT) (error "Static type error: operator ! expected Bool found Pair")])]
+    [(my-and l r) (match (typecheck-expr l env funs)
+                    [(numT) (error "Static type error: operator && expected Bool found Num")]
+                    [(boolT) (match (typecheck-expr r env funs)
+                                [(numT) (error "Static type error: operator && expected Bool found Num")]
                                 [(boolT) (boolT)]
-                                [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-                    [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-    [(my-or l r) (match (typecheck-expr l env)
-                    [(numT) (error "Static type error: expected Bool found Num")]
-                    [(boolT) (match (typecheck-expr r env)
-                                [(numT) (error "Static type error: expected Bool found Num")]
+                                [(pairT lT rT) (error "Static type error: operator && expected Bool found Pair")])]
+                    [(pairT lT rT) (error "Static type error: operator && expected Bool found Pair")])]
+    [(my-or l r) (match (typecheck-expr l env funs)
+                    [(numT) (error "Static type error: operator || expected Bool found Num")]
+                    [(boolT) (match (typecheck-expr r env funs)
+                                [(numT) (error "Static type error: operator || expected Bool found Num")]
                                 [(boolT) (boolT)]
-                                [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-                    [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-    [(fst e) (match (typecheck-expr e env)
-               [(numT) (error "Static type error: expected Pair found Num")]
-               [(boolT) (error "Static type error: expected Pair found Bool")]
+                                [(pairT lT rT) (error "Static type error: operator || expected Bool found Pair")])]
+                    [(pairT lT rT) (error "Static type error: operator || expected Bool found Pair")])]
+    [(fst e) (match (typecheck-expr e env funs)
+               [(numT) (error "Static type error: operator fst expected Pair found Num")]
+               [(boolT) (error "Static type error: operator fst expected Pair found Bool")]
                [(pairT lT rT) lT])]
-    [(snd e) (match (typecheck-expr e env)
-               [(numT) (error "Static type error: expected Pair found Num")]
-               [(boolT) (error "Static type error: expected Pair found Bool")]
+    [(snd e) (match (typecheck-expr e env funs)
+               [(numT) (error "Static type error: operator snd expected Pair found Num")]
+               [(boolT) (error "Static type error: operator snd expected Pair found Bool")]
                [(pairT lT rT) rT])]
-    [(my-if c t f) (match (typecheck-expr c env)
+    [(my-if c t f) (match (typecheck-expr c env funs)
                      [(numT) (error "Static type error: expected Bool found Num")]
-                     [(boolT) (match (typecheck-expr t env)
-                                [(numT) (match (typecheck-expr f env)
+                     [(boolT) (match (typecheck-expr t env funs)
+                                [(numT) (match (typecheck-expr f env funs)
                                           [(numT) (numT)]
                                           [(boolT) (error "Static type error: expected Num found Bool")]
                                           [(pairT lT rT) (error "Static type error: expected Num found Pair")])]
-                                [(boolT) (match (typecheck-expr f env)
+                                [(boolT) (match (typecheck-expr f env funs)
                                            [(numT) (error "Static type error: expected Bool found Num")]
                                            [(boolT) (boolT)]
                                            [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
-                                [(pairT lT rT) (match (typecheck-expr f env)
+                                [(pairT lT rT) (match (typecheck-expr f env funs)
                                                  [(numT) (error "Static type error: expected Pair found Num")]
                                                  [(boolT) (error "Static type error: expected Pair found Bool")]
                                                  [(pairT lT rT) (pairT lT rT)])])]
                      [(pairT lT rT) (error "Static type error: expected Bool found Pair")])]
     [(my-with list body) (cond
-                           [(equal? list '()) (typecheck-expr body env)]
+                           [(equal? list '()) (typecheck-expr body env funs)]
                            [else
                             (def id-declarado (car(car list)))
                             (def argumento-declarado (car (cdr (cdr (car list)))))
                             (def tipo-declarado (car (cdr (car list))))
                             (cond
-                                   [(type-error tipo-declarado (typecheck-expr argumento-declarado env))
+                                   [(type-error tipo-declarado (typecheck-expr argumento-declarado env funs))
                                     (def newEnv (extend-env id-declarado tipo-declarado env))
-                                    (typecheck-expr (my-with (cdr list) body) newEnv)]
+                                    (typecheck-expr (my-with (cdr list) body) newEnv funs)]
                                    [else (error "te pasaste")])])]
-    [(app name arg-expr) (error "aun no se implementa el app del typecheck-expr")]))
+    [(app name arg-expr) (def fun (lookup-fundef name funs))
+                         (def (fundef _ arg tbody _) fun)
+                         (cond
+                           [(equal? arg-expr '()) fun]
+                           [else (begin
+                                   (check-args arg arg-expr env funs)
+                                   tbody)])]))
+
+(define (check-args arg arg-expr env funs)
+  (cond
+    [(equal? arg '()) (cond
+                        [(equal? arg-expr '()) #t]
+                        [else (error "Cantidad de argumentos dadas menor que las necesarias")])]
+    [(equal? arg-expr '()) (error "Cantidad de argumentos dadas mayor que las necesarias")]
+    [else (def t1 (car (cdr (car arg))))
+          (def t2 (typecheck-expr (car arg-expr) env funs))
+          (begin (type-error t1 t2)
+                 (check-args (cdr arg) (cdr arg-expr) env funs))]))
 
 ;; typecheck-fundef :: fundef -> type
 (define (typecheck-fundef f env)
   (def (fundef name arg tbody body) f)
   (def newEnv (foldl make-env-args env arg))
   (cond
-     [(type-error tbody (typecheck-expr body newEnv)) newEnv]
+     [(type-error tbody (typecheck-expr body newEnv empty-env)) newEnv]
      [else (error "pasó algo")]))
+
 
 ;; typecheck :: prog -> type
 (define (typecheck p)
   (def (prog funs main) p)
   (def newEnv (foldl typecheck-fundef empty-env funs))
-  (typecheck-expr main newEnv))
+  (typecheck-expr main newEnv funs))
 
 ;; EJEMPLOS VOLATILES
 
