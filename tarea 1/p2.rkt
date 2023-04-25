@@ -197,7 +197,7 @@ representation BNF:
     [(my-with list body) (cond
                            [(equal? list '()) (interp body env funs)]
                            [else (interp (my-with (cdr list) body)
-                                         (extend-env (car (car list)) (interp (car (cdr (car list))) env funs) env)
+                                         (extend-env (car (car list)) (interp (car (cdr (cdr (car list)))) env funs) env)
                                          funs)])]
     [(app f e)
      (def (fundef _ arg _ body) (lookup-fundef f funs))
