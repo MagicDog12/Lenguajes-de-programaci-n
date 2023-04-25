@@ -57,7 +57,27 @@
       (numT))
 ;; Caso app
 ;; Caso definicion de funcion
+(test (typecheck (parse '{ ; Programa de ejemplo 4
+                          {define {sum1 {x : Num} {y : Num}} {+ {add1 x} {add1 y}}}
+                          {sum1 5 10}
+                          }))
+      (numT))
 ;; expresion del cuerpo tiene el mismo tipo que el tipo de retorno declarado?
+(test (typecheck (parse '{ ; Programa de ejemplo 4
+                          {define {sum1 {x : Num} {y : Num}} : Num {+ {add1 x} {add1 y}}}
+                          {sum1 5 10}
+                          }))
+      (numT))
+(test/exn (typecheck (parse '{ ; Programa de ejemplo 4
+                          {define {sum1 {x : Num} {y : Num}} : Bool {+ {add1 x} {add1 y}}}
+                          {sum1 5 10}
+                          }))
+      "Static type error: expected Bool found Num")
+(test/exn (typecheck (parse '{ ; Programa de ejemplo 4
+                          {define {sum1 {x : Num} {y : Num}} : {Pair Num Num} {+ {add1 x} {add1 y}}}
+                          {sum1 5 10}
+                          }))
+      "Static type error: expected Pair found Num")
 ;; el tipo de retorno no se especifica
 ;; Caso con operador < ... agregar mas
 ;; = solo compara numeros
