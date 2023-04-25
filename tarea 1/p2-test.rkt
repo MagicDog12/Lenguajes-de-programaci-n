@@ -107,6 +107,26 @@
                      {f {< 3 4}}}))
         (numT))
 
+(test/exn (typecheck (parse '{
+                   {define {id {x : Num}} : Num {< x 3}}
+                   {id #t}})) "Static type error: expected Num found Bool")
+
+(test (typecheck (parse '{
+                   {define {id {x : Num}} x}
+                   {id 5}})) (numT))
+
+(test (typecheck (parse '{
+                   {define {id {x : Num} {y : Num}} {+ x y}}
+                   {id 5 3}})) (numT))
+
+(test (typecheck (parse '{
+                   {define {id {x : Num}} : Num x}
+                   {id 5}})) (numT))
+
+(test/exn (typecheck (parse '{
+                   {define {id {x : Num} {y : Num}} : Bool {+ x y}}
+                   {id 5 3}})) "Static type error: expected Bool found Num")
+
 (test/exn (typecheck (parse '{{define {one {x : Num}} 1}
                        {one #t}}))
           "Static type error: expected Num found Bool")
