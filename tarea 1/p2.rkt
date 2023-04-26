@@ -255,7 +255,7 @@ representation BNF:
                               [(boolT) (error "Static type error: operator + expected Num found Bool")]
                               [(pairT lT rT) (error "Static type error: operator add1 expected Num found Pair")])]
                     [(boolT) (error "Static type error: operator + expected Num found Bool")]
-                    [(pairT lT rT) (error "Static type error: operator add1 expected Num found Pair")])]
+                    [(pairT lT rT) (error "Static type error: operator + expected Num found Pair")])]
     [(my-< l r) (match (typecheck-expr l env funs)
                       [(numT) (match (typecheck-expr r env funs)
                                 [(numT) (boolT)]
@@ -335,8 +335,8 @@ representation BNF:
   (cond
     [(equal? arg '()) (cond
                         [(equal? arg-expr '()) #t]
-                        [else (error "Cantidad de argumentos dadas menor que las necesarias")])]
-    [(equal? arg-expr '()) (error "Cantidad de argumentos dadas mayor que las necesarias")]
+                        [else (error "Static type error: fewer arguments were expected")])]
+    [(equal? arg-expr '()) (error "Static type error: more arguments were expected")]
     [else (def t1 (car (cdr (car arg))))
           (def t2 (typecheck-expr (car arg-expr) env funs))
           (begin (type-error t1 t2)
