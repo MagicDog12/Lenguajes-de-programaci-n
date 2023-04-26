@@ -48,8 +48,9 @@
   (my-with list body)
   (app name arg-expr)
   )
+
 #|
-lookup-fundef :: name list -> Fundef
+lookup-fundef :: name list -> Fundef/error
 Busca una funcion por nombre y retorna la funcion
 |#
 (define (lookup-fundef f funs)
@@ -135,7 +136,7 @@ devuele un ambiente extendido del ambiente dado donde se agregan estos argumento
           (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]))
 
 #|
-lookUpNumV :: Expr -> numV-n
+lookUpNumV :: Expr -> numV-n/error
 Recibe una expresion, le hace pattern matching y si es un numV retorna el valor,
 de lo contrario da un Runtime type error
 |#
@@ -146,7 +147,7 @@ de lo contrario da un Runtime type error
     [(pairV lV rV) (error "Runtime type error: expected Number found Pair")]))
 
 #|
-lookUpBoolV :: Expr -> boolV-b
+lookUpBoolV :: Expr -> boolV-b/error
 Recibe una expresion, le hace pattern matching y si es un boolV retorna el valor,
 de lo contrario da un Runtime type error
 |#
@@ -157,7 +158,7 @@ de lo contrario da un Runtime type error
     [(pairV lV rV) (error "Runtime type error: expected Bool found Pair")]))
 
 #|
-lookUpPairVfst :: Expr -> PairV-lV
+lookUpPairVfst :: Expr -> PairV-lV/error
 Recibe una expresion, le hace pattern matching y si es un pairV retorna el valor lV,
 de lo contrario da un Runtime type error
 |#
@@ -168,7 +169,7 @@ de lo contrario da un Runtime type error
     [(pairV lV rV) lV]))
 
 #|
-lookUpPairVsnd :: Expr -> PairV-rV
+lookUpPairVsnd :: Expr -> PairV-rV/error
 Recibe una expresion, le hace pattern matching y si es un pairV retorna el valor rV,
 de lo contrario da un Runtime type error
 |#
