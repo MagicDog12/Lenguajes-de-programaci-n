@@ -347,7 +347,7 @@ representation BNF:
   (def (fundef name arg tbody body) f)
   (def newEnv (foldl make-env-args env arg))
   (cond
-     [(type-error tbody (typecheck-expr body newEnv empty-env)) newEnv]
+     [(type-error tbody (typecheck-expr body newEnv '())) newEnv]
      [else (error "pasó algo")]))
 
 
