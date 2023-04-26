@@ -157,14 +157,23 @@ representation BNF:
                              (def extEnv (extend-env arg e-interpretado envResult))
                              (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]
             [(list arg type contract) (def new-e (car e))
+                                      (def check (check-contract contract funs))
                                       (def e-interpretado (interp new-e envInterp funs))
                                       (begin (cond
                                         [(equal? (interp (app contract (list new-e)) envInterp funs) (boolV #t))]
-                                        [else (error "Runtime contract error: <v> does not satisfy <contract>")])
+                                        [else (error (string-append "Runtime contract error: " (~v new-e) " does not satisfy " (~a contract)))
+])
                                       (def extEnv (extend-env arg e-interpretado envResult))
                                       (auxEnv (cdr args) (cdr e) envInterp funs extEnv))])]))
 
-
+;;
+(define (check-contract contrato funs)
+  (def (fundef _ arg tbody _) (lookup-fundef contrato funs))
+  (cond
+    [(equal? (length arg) 1) (cond
+                               [(equal? tbody (boolT))]
+                               [else (error (string-append "Static contract error: invalid type for " (~a contrato)))])]
+    [else (error (string-append "Static contract error: invalid type for " (~a contrato)))]))
 ;; lookUpNumV :: Expr -> numV-n
 (define (lookUpNumV expr)
   (match expr
@@ -391,51 +400,10 @@ representation BNF:
 <type>   ::= Num | Bool | {Pair <type> <type>}
 |#
 
-#;(test (run '{{define {positive {x : Num}} {< 0 x}}
-             {define {sub {x : Num @ positive} {y : Num}} : Num
-               {- y x}}
-             {sub 5 3}})
-      (numV 2))
-;; Obtenemos p parseado
-(def p (parse '{{define {positive {x : Num}} {< 0 x}}
-             {define {sub {x : Num @ positive} {y : Num}} : Num
-               {+ y x}}
-             {sub 5 3}}))
-;; Obtenemos funs y main
-(def (prog funs main) p)
-;; (interp main empty-env funs)
-(def (app f e) main)
-(def (fundef _ arg _ body) (lookup-fundef f funs))
-#;(interp body
-             (auxEnv arg e empty-env funs empty-env)
-             funs)
-;; (auxEnv arg e empty-env funs empty-env)
-(def arg-actual (car arg))
-(match arg-actual
-  [(list arg type) #t]
-  [(list arg type contract) (def new-e (car e))
-                            (def e-interpretado (interp new-e empty-env funs))
-                            #f])
-(def (list arg22 type22 contract22) arg-actual)
-(def new-e (car e))
-(def e-interpretado (interp new-e empty-env funs))
-(interp (app contract22 (list new-e)) empty-env funs)
-#;(define (auxEnv args e envInterp funs envResult)
-  (cond
-    [(equal? args '()) envResult]
-    [else (def arg-actual (car args))
-          (match arg-actual
-            [(list arg type) (def new-e (car e))
-                             (def e-interpretado (interp new-e envInterp funs))
-                             (def extEnv (extend-env arg e-interpretado envResult))
-                             (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]
-            [(list arg type contract) (def new-e (car e))
-                                      (def e-interpretado (interp new-e envInterp funs))
-                                      (begin (cond
-                                        [(equal? (interp (app contract e-interpretado) envInterp funs) (boolV #t))]
-                                        [else (error "Runtime contract error: <v> does not satisfy <contract>")])
-                                      (def extEnv (extend-env arg e-interpretado envResult))
-                                      (auxEnv (cdr args) (cdr e) envInterp funs extEnv))])]))
+
+
+
+
 
 
 
