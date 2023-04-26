@@ -95,28 +95,28 @@
                           }))
       (pairT (numT) (numT)))
 ;; Caso en que el argumento tiene tipo Num y la funcion espera otro tipo
-(test/exn (typecheck (parse (parse '{ 
+(test/exn (typecheck (parse '{ 
                           {define {bool1 {x : Num}} {! x}}
                           {bool1 #t}
-                          }))) "Static type error: operator ! expected Bool found Num")
-(test/exn (typecheck (parse (parse '{ 
+                          })) "Static type error: operator ! expected Bool found Num")
+(test/exn (typecheck (parse '{ 
                           {define {pair1 {x : Num}} {fst x}}
                           {pair1 #t}
-                          }))) "Static type error: operator fst expected Pair found Num")
+                          })) "Static type error: operator fst expected Pair found Num")
 ;; Caso en que el argumento tiene tipo Bool y la funcion espera otro tipo
 (test/exn (typecheck (parse '{ 
                           {define {sum1 {x : Num} {y : Bool}} {+ {add1 x} {add1 y}}}
                           {sum1 5 10}
                           })) "Static type error: operator add1 expected Num found Bool")
-(test/exn (typecheck (parse (parse '{ 
+(test/exn (typecheck (parse '{ 
                           {define {pair1 {x : Bool}} {fst x}}
                           {pair1 #t}
-                          }))) "Static type error: operator fst expected Pair found Bool")
+                          })) "Static type error: operator fst expected Pair found Bool")
 ;; Caso en que el argumento tiene tipo Pair y la funcion espera otro tipo
-(test/exn (typecheck (parse (parse '{ 
+(test/exn (typecheck (parse '{ 
                           {define {bool1 {x : {Pair Num Num}}} {! x}}
                           {bool1 #t}
-                          }))) "Static type error: operator ! expected Bool found Pair")
+                          })) "Static type error: operator ! expected Bool found Pair")
 (test/exn (typecheck (parse '{ 
                           {define {sum1 {x : Num} {y : {Pair Bool Bool}}} {+ {add1 x} {add1 y}}}
                           {sum1 5 10}
