@@ -122,8 +122,13 @@ representation BNF:
 
 
 ;; parse-args :: s-args -> args
-(define (parse-args sa st)
-  (list sa (parse-type st)))
+(define (parse-args args-full [acc '()])
+  (cond
+    [(equal? args-full '()) acc]
+    [else (def primero (car args-full))
+          (match primero
+            [(list arg ': type) (parse-args (cdr args-full) (append acc (list (list arg (parse-type type)))))]
+            [(list arg ': type '@ contract) (parse-args (cdr args-full) (append acc (list (list arg (parse-type type) contract))))])]))
 
 (define (make-env-args args env)
   (def arg (car args))
@@ -133,11 +138,11 @@ representation BNF:
 ;; parse-fundef :: s-Fundef -> Fundef
 (define (parse-fundef sf)
   (match sf
-    [(list 'define (list name (list args ': types) ...) body) (def args-new (map parse-args args types))
+    [(list 'define (list name args-full ...) body) (def args-new (parse-args args-full))
                                               (def newEnv (foldl make-env-args empty-env args-new))
                                               (def tbody (typecheck-expr (parse-expr body) newEnv empty-env))
                                               (fundef name args-new tbody (parse-expr body))]
-    [(list 'define (list name (list args ': types) ...) ': tbody body) (def args-new (map parse-args args types))
+    [(list 'define (list name args-full ...) ': tbody body) (def args-new (parse-args args-full))
                                                        (def tbody-new (parse-type tbody))
                                                        (fundef name args-new tbody-new (parse-expr body))]))
 
@@ -145,8 +150,19 @@ representation BNF:
 (define (auxEnv args e envInterp funs envResult)
   (cond
     [(equal? args '()) envResult]
-    [else (def extEnv (extend-env (car(car args)) (interp (car e) envInterp funs) envResult))
-          (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]))
+    [else (def arg-actual (car args))
+          (match arg-actual
+            [(list arg type) (def new-e (car e))
+                             (def e-interpretado (interp new-e envInterp funs))
+                             (def extEnv (extend-env arg e-interpretado envResult))
+                             (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]
+            [(list arg type contract) (def new-e (car e))
+                                      (def e-interpretado (interp new-e envInterp funs))
+                                      (begin (cond
+                                        [(equal? (interp (app contract (list new-e)) envInterp funs) (boolV #t))]
+                                        [else (error "Runtime contract error: <v> does not satisfy <contract>")])
+                                      (def extEnv (extend-env arg e-interpretado envResult))
+                                      (auxEnv (cdr args) (cdr e) envInterp funs extEnv))])]))
 
 
 ;; lookUpNumV :: Expr -> numV-n
@@ -205,6 +221,7 @@ representation BNF:
              (auxEnv arg e env funs empty-env)
              funs)]
     ))
+
 
 #|
 <fundef> ::= {define {<id> {arg}*} [: <type>] <expr>}
@@ -347,7 +364,7 @@ representation BNF:
   (def (fundef name arg tbody body) f)
   (def newEnv (foldl make-env-args env arg))
   (cond
-     [(type-error tbody (typecheck-expr body newEnv empty-env)) newEnv]
+     [(type-error tbody (typecheck-expr body newEnv '())) newEnv]
      [else (error "pasó algo")]))
 
 
@@ -373,4 +390,53 @@ representation BNF:
 
 <type>   ::= Num | Bool | {Pair <type> <type>}
 |#
+
+#;(test (run '{{define {positive {x : Num}} {< 0 x}}
+             {define {sub {x : Num @ positive} {y : Num}} : Num
+               {- y x}}
+             {sub 5 3}})
+      (numV 2))
+;; Obtenemos p parseado
+(def p (parse '{{define {positive {x : Num}} {< 0 x}}
+             {define {sub {x : Num @ positive} {y : Num}} : Num
+               {+ y x}}
+             {sub 5 3}}))
+;; Obtenemos funs y main
+(def (prog funs main) p)
+;; (interp main empty-env funs)
+(def (app f e) main)
+(def (fundef _ arg _ body) (lookup-fundef f funs))
+#;(interp body
+             (auxEnv arg e empty-env funs empty-env)
+             funs)
+;; (auxEnv arg e empty-env funs empty-env)
+(def arg-actual (car arg))
+(match arg-actual
+  [(list arg type) #t]
+  [(list arg type contract) (def new-e (car e))
+                            (def e-interpretado (interp new-e empty-env funs))
+                            #f])
+(def (list arg22 type22 contract22) arg-actual)
+(def new-e (car e))
+(def e-interpretado (interp new-e empty-env funs))
+(interp (app contract22 (list new-e)) empty-env funs)
+#;(define (auxEnv args e envInterp funs envResult)
+  (cond
+    [(equal? args '()) envResult]
+    [else (def arg-actual (car args))
+          (match arg-actual
+            [(list arg type) (def new-e (car e))
+                             (def e-interpretado (interp new-e envInterp funs))
+                             (def extEnv (extend-env arg e-interpretado envResult))
+                             (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]
+            [(list arg type contract) (def new-e (car e))
+                                      (def e-interpretado (interp new-e envInterp funs))
+                                      (begin (cond
+                                        [(equal? (interp (app contract e-interpretado) envInterp funs) (boolV #t))]
+                                        [else (error "Runtime contract error: <v> does not satisfy <contract>")])
+                                      (def extEnv (extend-env arg e-interpretado envResult))
+                                      (auxEnv (cdr args) (cdr e) envInterp funs extEnv))])]))
+
+
+
 
