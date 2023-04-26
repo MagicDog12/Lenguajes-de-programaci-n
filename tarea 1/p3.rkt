@@ -1,17 +1,18 @@
 #lang play
 
-;;;;
-#|  COPIE Y PEGUE SU CODIGO DE LA PREGUNTA UNO   |#
-
 (require "env.rkt")
 
-;; Parte 1
+;; Parte 3
+
+;; <prog>   ::= {<fundef>* <expr>}
+(deftype Prog
+  (prog fundefs main))
+
+;; <fundef> ::= {define {<id> {arg}*} : [: <type>] <expr>}
+(deftype Fundef
+  (fundef name arg tbody body))
 
 #|
-<prog>   ::= {<fundef>* <expr>}
-
-<fundef> ::= {define {<id> <id>*} <expr>}
-
 <expr>   ::= <num>
            | <id>
            | <bool>
@@ -29,12 +30,6 @@
            | {with {{<id> <expr>}*} <expr>}
            | {<id> <expr>*}
 |#
-(deftype Prog
-  (prog fundefs main))
-
-(deftype Fundef
-  (fundef name arg tbody body))
-
 (deftype Expr
   (num n)
   (id x)
@@ -54,7 +49,10 @@
   (app name arg-expr)
   )
 
-; busca funcion por nombre
+#|
+lookup-fundef :: name list -> Fundef/error
+Busca una funcion por nombre y retorna la funcion
+|#
 (define (lookup-fundef f funs)
   (match funs
     ['() (error "undefined function:" f)]
@@ -76,27 +74,43 @@ representation BNF:
   (boolV b)
   (pairV lV rV))
 
-;; parse :: s-Prog -> Prog
+#|
+parse :: s-Prog -> Prog
+Convierte un programa de sintaxis concreta a sintaxis abstracta
+|#
 (define (parse sp)
   (match sp
     [(list ds ... e) (prog (map parse-fundef ds) (parse-expr e))] ;; ds es la lista de definiciones, e es la expresion principal
     ))
 
-;; aux :: id s-Expr -> (my-cons id Expr)
+#|
+aux :: id s-Expr -> list
+Toma un id y un se, y retorna una lista con id y se parseado
+|#
 (define (aux id type se)
   (list id type (parse-expr se)))
 
+#|
+type-check-aux :: s-Expr -> Type
+Toma una expresion en sintaxis concreta y retorna el tipo de la expresion
+|#
 (define (type-check-aux se)
   (typecheck-expr (parse-expr se) empty-env empty-env))
 
-;; parse-type :: s-Type -> Type
+#|
+parse-type :: s-Type -> Type
+Toma un tipo en sintaxis concreta y lo devuelve en sintaxis abstracta
+|#
 (define (parse-type st)
   (match st
     ['Num (numT)]
     ['Bool (boolT)]
     [(list 'Pair l r) (pairT (parse-type l) (parse-type r))]))
 
-;; parse-expr :: s-Expr -> Expr
+#|
+parse-expr :: s-Expr -> Expr
+Convierte una expresion de sintaxis concreta a sintaxis abstracta
+|#
 (define (parse-expr se)
   (match se
     [(? number?) (num se)]
@@ -121,7 +135,10 @@ representation BNF:
     ))
 
 
-;; parse-args :: s-args -> args
+#|
+parse-args :: s-Args -> Args
+Toma un sa y un st, y retorna una lista con sa y st parseado
+|#
 (define (parse-args args-full [acc '()])
   (cond
     [(equal? args-full '()) acc]
@@ -130,12 +147,21 @@ representation BNF:
             [(list arg ': type) (parse-args (cdr args-full) (append acc (list (list arg (parse-type type)))))]
             [(list arg ': type '@ contract) (parse-args (cdr args-full) (append acc (list (list arg (parse-type type) contract))))])]))
 
+#|
+make-env-args :: Args Env -> Env
+Toma una lista de argumentos y desenvuelve su arg y type,
+luego retorna un ambiente extendido que posee arg y type.
+|#
 (define (make-env-args args env)
   (def arg (car args))
   (def type (car (cdr args)))
   (extend-env arg type env))
 
-;; parse-fundef :: s-Fundef -> Fundef
+#|
+parse-fundef :: s-Fundef -> Fundef
+Convierte una definicion de funcion de sintaxis concreta a sintaxis abstracta
+y retorna una Fundef con su body parseado
+|#
 (define (parse-fundef sf)
   (match sf
     [(list 'define (list name args-full ...) body) (def args-new (parse-args args-full))
@@ -146,7 +172,13 @@ representation BNF:
                                                        (def tbody-new (parse-type tbody))
                                                        (fundef name args-new tbody-new (parse-expr body))]))
 
-;; auxEnv :: list list env funs -> env
+#|
+auxEnv :: List[FunDef-arg] List[app-arg-expr] Env Funs -> Env
+Toma una lista con argumentos proveniente de la definicion de la funcion,
+toma una lista con los argumentos para evaluar la funcion, un ambiente y una lista de funciones y
+devuele un ambiente extendido del ambiente dado donde se agregan estos argumentos al ambiente.
+Updat: Ahora checkea el contrato
+|#
 (define (auxEnv args e envInterp funs envResult)
   (cond
     [(equal? args '()) envResult]
@@ -174,35 +206,56 @@ representation BNF:
                                [(equal? tbody (boolT))]
                                [else (error (string-append "Static contract error: invalid type for " (~a contrato)))])]
     [else (error (string-append "Static contract error: invalid type for " (~a contrato)))]))
-;; lookUpNumV :: Expr -> numV-n
+
+#|
+lookUpNumV :: Expr -> numV-n/error
+Recibe una expresion, le hace pattern matching y si es un numV retorna el valor,
+de lo contrario da un Runtime type error
+|#
 (define (lookUpNumV expr)
   (match expr
     [(numV n) n]
     [(boolV b) (error "Runtime type error: expected Number found Bool")]
     [(pairV lV rV) (error "Runtime type error: expected Number found Pair")]))
 
-;; lookUpBoolV :: Expr -> boolV-b
+#|
+lookUpBoolV :: Expr -> boolV-b/error
+Recibe una expresion, le hace pattern matching y si es un boolV retorna el valor,
+de lo contrario da un Runtime type error
+|#
 (define (lookUpBoolV expr)
   (match expr
     [(numV n) (error "Runtime type error: expected Bool found Number")]
     [(boolV b) b]
     [(pairV lV rV) (error "Runtime type error: expected Bool found Pair")]))
 
-;; lookUpPairVfst :: Expr -> PairV-lV
+#|
+lookUpPairVfst :: Expr -> PairV-lV/error
+Recibe una expresion, le hace pattern matching y si es un pairV retorna el valor lV,
+de lo contrario da un Runtime type error
+|#
 (define (lookUpPairVfst expr)
   (match expr
     [(numV n) (error "Runtime type error: expected Pair found Number")]
     [(boolV b) (error "Runtime type error: expected Pair found Bool")]
     [(pairV lV rV) lV]))
 
-;; lookUpPairVsnd :: Expr -> PairV-rV
+#|
+lookUpPairVsnd :: Expr -> PairV-rV/error
+Recibe una expresion, le hace pattern matching y si es un pairV retorna el valor rV,
+de lo contrario da un Runtime type error
+|#
 (define (lookUpPairVsnd expr)
   (match expr
     [(numV n) (error "Runtime type error: expected Pair found Number")]
     [(boolV b) (error "Runtime type error: expected Pair found Bool")]
     [(pairV lV rV) rV]))
 
-;; interp :: Expr -> Env -> List[FunDef] -> Val
+#|
+interp :: Expr Env List[FunDef] -> Val
+Recibe una expresion, un ambiente y una lista de funciones e interpreta la expresion en ese contexto
+retornando un valor.
+|#
 (define (interp exp env funs)
   (match exp
     [(num n) (numV n)]
@@ -231,23 +284,17 @@ representation BNF:
              funs)]
     ))
 
-
-#|
-<fundef> ::= {define {<id> {arg}*} [: <type>] <expr>}
-
-<arg>    ::= {<id> : <type>}
-
-<expr>   ::= ... | {with { {<id> [: <type>] <expr>}* } <expr>}  ; los otros casos no cambian
-
-<type>   ::= Num | Bool | {Pair <type> <type>}
-|#
-
+;; <type>   ::= Num | Bool | {Pair <type> <type>}
 (deftype Type
   (numT)
   (boolT)
   (pairT lT rT))
 
-;; type-error :: type type -> #t / error
+#|
+type-error :: Type Type -> bool/error
+Recibe el tipo que queremos y el tipo que tenemos y retorna #t si son iguales,
+de lo contrario lanza un Static type error
+|#
 (define (type-error my-type t)
   (match my-type
     [(numT) (match t
@@ -264,7 +311,10 @@ representation BNF:
               [(pairT lT2 rT2) (def aux-lT (type-error lT lT2))
                              (type-error rT rT2)])]))
 
-;; typecheck-expr :: expr -> type
+#|
+typecheck-expr :: Expr Env List[Fundef]-> Type/error
+Calcula el tipo de la expresion en ese contexto de ambiente y funs.
+|#
 (define (typecheck-expr e env funs)
   (match e
     [(num n) (numT)]
@@ -357,6 +407,11 @@ representation BNF:
                                    (check-args arg arg-expr env funs)
                                    tbody)])]))
 
+#|
+check-args :: Arg Arg-expr Env List[Fundef] -> bool/error
+Revisa si el tipo de los argumentos de la funcion coinciden con los tipos
+dados en la apliacion de la funcion.
+|#
 (define (check-args arg arg-expr env funs)
   (cond
     [(equal? arg '()) (cond
@@ -368,7 +423,10 @@ representation BNF:
           (begin (type-error t1 t2)
                  (check-args (cdr arg) (cdr arg-expr) env funs))]))
 
-;; typecheck-fundef :: fundef -> type
+#|
+typecheck-fundef :: Fundef -> Type
+Revisa si está bien tipada la funcion.
+|#
 (define (typecheck-fundef f env)
   (def (fundef name arg tbody body) f)
   (def newEnv (foldl make-env-args env arg))
@@ -377,28 +435,24 @@ representation BNF:
      [else (error "pasó algo")]))
 
 
-;; typecheck :: prog -> type
+#|
+typecheck :: Prog -> Type
+Revisa si está bien tipado el programa.
+|#
 (define (typecheck p)
   (def (prog funs main) p)
   (def newEnv (foldl typecheck-fundef empty-env funs))
   (typecheck-expr main newEnv funs))
 
-;; run :: sp -> Val
+#|
+run :: s-Prog -> Val
+Recibe un programa en sintaxis concreta, lo parsea, revisa su tipado y luego lo interpreta donde se
+verifica el contrato,retornando un valor.
+|#
 (define (run sp)
   (def p (parse sp))
   (def (prog funs main) p)
   (begin (typecheck p) (interp main empty-env funs)))
-
-#|
-<fundef> ::= {define {<id> {arg}*} [: <type>] <expr>} ; como antes
-
-<arg>    ::= {<id> : <type>} ; como antes
-           | {<id> : <type> @ <contract>}  ; lo único nuevo
-
-<expr>   ::= ... | {with { {<id> [: <type>] <expr>}* } <expr>}  ; los otros casos no cambian
-
-<type>   ::= Num | Bool | {Pair <type> <type>}
-|#
 
 
 
