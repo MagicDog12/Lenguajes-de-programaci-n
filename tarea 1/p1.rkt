@@ -4,11 +4,15 @@
 
 ;; Parte 1
 
+;; <prog>   ::= {<fundef>* <expr>}
+(deftype Prog
+  (prog fundefs main))
+
+;; <fundef> ::= {define {<id> <id>*} <expr>}
+(deftype Fundef
+  (fundef name arg body))
+
 #|
-<prog>   ::= {<fundef>* <expr>}
-
-<fundef> ::= {define {<id> <id>*} <expr>}
-
 <expr>   ::= <num>
            | <id>
            | <bool>
@@ -26,12 +30,6 @@
            | {with {{<id> <expr>}*} <expr>}
            | {<id> <expr>*}
 |#
-(deftype Prog
-  (prog fundefs main))
-
-(deftype Fundef
-  (fundef name arg body))
-
 (deftype Expr
   (num n)
   (id x)
@@ -50,8 +48,10 @@
   (my-with list body)
   (app name arg-expr)
   )
-
-; busca funcion por nombre
+#|
+lookup-fundef :: name list -> Fundef
+Busca una funcion por nombre y retorna la funcion
+|#
 (define (lookup-fundef f funs)
   (match funs
     ['() (error "undefined function:" f)]
@@ -73,17 +73,26 @@ representation BNF:
   (boolV b)
   (pairV lV rV))
 
-;; parse :: s-Prog -> Prog
+#|
+parse :: s-Prog -> Prog
+Convierte un programa de sintaxis concreta a sintaxis abstracta
+|#
 (define (parse sp)
   (match sp
     [(list ds ... e) (prog (map parse-fundef ds) (parse-expr e))] ;; ds es la lista de definiciones, e es la expresion principal
     ))
 
-;; aux :: id s-Expr -> (my-cons id Expr)
+#|
+aux :: id s-Expr -> list
+Toma un id y un se, y retorna una lista con id y se parseado
+|#
 (define (aux id se)
   (list id (parse-expr se)))
 
-;; parse-expr :: s-Expr -> Expr
+#|
+parse-expr :: s-Expr -> Expr
+Convierte una expresion de sintaxis concreta a sintaxis abstracta
+|#
 (define (parse-expr se)
   (match se
     [(? number?) (num se)]
@@ -104,49 +113,76 @@ representation BNF:
     [(list f e ...) (app f (map parse-expr e))]
     ))
 
-
-;; parse-fundef :: s-Fundef -> Fundef
+#|
+parse-fundef :: s-Fundef -> Fundef
+Convierte una definicion de funcion de sintaxis concreta a sintaxis abstracta
+y retorna una Fundef con su body parseado
+|#
 (define (parse-fundef sf)
   (match sf
     [(list 'define (list name args ...) body) (fundef name args (parse-expr body))]))
 
-;; auxEnv :: list list env funs -> env
+#|
+auxEnv :: List[FunDef-arg] List[app-arg-expr] Env Funs -> Env
+Toma una lista con argumentos proveniente de la definicion de la funcion,
+toma una lista con los argumentos para evaluar la funcion, un ambiente y una lista de funciones y
+devuele un ambiente extendido del ambiente dado donde se agregan estos argumentos al ambiente.
+|#
 (define (auxEnv args e envInterp funs envResult)
   (cond
     [(equal? args '()) envResult]
     [else (def extEnv (extend-env (car args) (interp (car e) envInterp funs) envResult))
           (auxEnv (cdr args) (cdr e) envInterp funs extEnv)]))
 
-
-;; lookUpNumV :: Expr -> numV-n
+#|
+lookUpNumV :: Expr -> numV-n
+Recibe una expresion, le hace pattern matching y si es un numV retorna el valor,
+de lo contrario da un Runtime type error
+|#
 (define (lookUpNumV expr)
   (match expr
     [(numV n) n]
     [(boolV b) (error "Runtime type error: expected Number found Bool")]
     [(pairV lV rV) (error "Runtime type error: expected Number found Pair")]))
 
-;; lookUpBoolV :: Expr -> boolV-b
+#|
+lookUpBoolV :: Expr -> boolV-b
+Recibe una expresion, le hace pattern matching y si es un boolV retorna el valor,
+de lo contrario da un Runtime type error
+|#
 (define (lookUpBoolV expr)
   (match expr
     [(numV n) (error "Runtime type error: expected Bool found Number")]
     [(boolV b) b]
     [(pairV lV rV) (error "Runtime type error: expected Bool found Pair")]))
 
-;; lookUpPairVfst :: Expr -> PairV-lV
+#|
+lookUpPairVfst :: Expr -> PairV-lV
+Recibe una expresion, le hace pattern matching y si es un pairV retorna el valor lV,
+de lo contrario da un Runtime type error
+|#
 (define (lookUpPairVfst expr)
   (match expr
     [(numV n) (error "Runtime type error: expected Pair found Number")]
     [(boolV b) (error "Runtime type error: expected Pair found Bool")]
     [(pairV lV rV) lV]))
 
-;; lookUpPairVsnd :: Expr -> PairV-rV
+#|
+lookUpPairVsnd :: Expr -> PairV-rV
+Recibe una expresion, le hace pattern matching y si es un pairV retorna el valor rV,
+de lo contrario da un Runtime type error
+|#
 (define (lookUpPairVsnd expr)
   (match expr
     [(numV n) (error "Runtime type error: expected Pair found Number")]
     [(boolV b) (error "Runtime type error: expected Pair found Bool")]
     [(pairV lV rV) rV]))
 
-;; interp :: Expr -> Env -> List[FunDef] -> Val
+#|
+interp :: Expr Env List[FunDef] -> Val
+Recibe una expresion, un ambiente y una lista de funciones e interpreta la expresion en ese contexto
+retornando un valor.
+|#
 (define (interp exp env funs)
   (match exp
     [(num n) (numV n)]
@@ -175,6 +211,10 @@ representation BNF:
              funs)]
     ))
 
+#|
+run :: s-Prog -> Val
+Recibe un programa en sintaxis concreta, lo parsea y luego lo interpreta retornando un valor.
+|#
 (define (run sp)
   (def (prog funs main) (parse sp))
   (interp main empty-env funs))
