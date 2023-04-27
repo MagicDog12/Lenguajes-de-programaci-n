@@ -42,7 +42,7 @@ en el with z el identificador libre es y
 |#
 
 #|
-* P3
+* P3 ola
 En clases se vió lo que es la currificación, que en simple es transformar la forma en
 que una función recibe sus argumentos
 |#
