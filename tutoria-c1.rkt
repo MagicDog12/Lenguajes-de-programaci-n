@@ -80,6 +80,7 @@ se aplica como ((f arg1) arg2)
 a) Defina la función (curry n f), que currifica una función de n argumentos.
 
 |#
+
 (define (curry n f [lista '()])
   (if (zero? n)
       (apply f lista)
@@ -95,11 +96,25 @@ a) Defina la función (curry n f), que currifica una función de n argumentos.
 (test (sum0) 0)
 (define (sum0-curry) (curry 0 sum0))
 (test (sum0-curry) 0)
+
 #|
 
 b) Defina la función (uncurry-2 f) que reciba una función currificada de 2 argumentos,
 y devuelve la misma función tal que reciba ambos argumentos simultáneamente.
 
-R:
-
 |#
+
+(define (uncurry-2 f [x '()] [n 2])
+  (cond
+    [(= n 2) (lambda x (def new-x (reverse x)))
+             (uncurry-2 f new-x 1)]
+    [(= n 1) ((uncurry-2 f (cdr x) 0) (car x))]
+    [(= n 0) (f (car x))]))
+
+;; Ejemplo 1:
+(define (suma2 x y) (+ x y))
+(test (suma2 2 4) 6)
+(define (suma2-curry) (curry 2 suma2))
+(test (((suma2-curry) 12) 14) 26)
+(define (example a b) (uncurry-2 suma2-curry))
+(test (example 5 7) 12)
