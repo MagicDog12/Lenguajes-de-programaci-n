@@ -7,6 +7,9 @@
 ;; log global
 (define log (box '()))
 
+;; parametro
+(define print-par (make-parameter println))
+
 ;; resultados
 (deftype Result
   (result val log))
@@ -15,6 +18,12 @@
 ;; agrega el numero al log global
 (define (println-g n)
   (set-box! log (cons n (unbox log))))
+
+;; register :: log -> num -> Null
+;; recibe un log local y un numero, y registra la impresion del numero en el log local
+(define (register log-local)
+  (lambda (n)
+    (set-box! log-local (cons n (unbox log-local)))))
 
 #|
 <CL> ::= <num>
@@ -68,7 +77,8 @@
     [(id x) (env-lookup x env)]
     [(printn e) 
       (def (numV n) (interp e env))
-      (println-g n)
+      ((print-par) n)
+      ;;(println-g n) ;;primer intento
       (numV n)]
     [(app fun-expr arg-expr)
      (match (interp fun-expr env)
@@ -102,12 +112,24 @@
                  {{addn 10} 4}})
       14)
 
+;; AGREGADO :
+
 ;; interp-g :: expr -> Result
-;; retorna un valor de tipo Result (usando interp) pero reiniciando en cada llamada el log global
+;; retorna un valor de tipo Result (usando interp) pero reiniciando en cada llamada el log global.
 (define (interp-g expr)
   (set-box! log '())
   (define v (interp expr empty-env))
   (result v log))
+
+;; interp-p :: expr -> Result
+;; retorna un valor de tipo Result (usando interp) haciendo uso de interp, pero manteniendo un
+;; log local y redefiniendo el valor del parámetro. El nuevo valor del parámetro debe ser una
+;; función que registre impresiones en el log local.
+(define (interp-p expr)
+  (def log-local (box '()))
+  (parameterize ([print-par (register log-local)])
+    (define v (interp expr empty-env))
+    (result v log-local)))
 
 
 
