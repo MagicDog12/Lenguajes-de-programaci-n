@@ -2,7 +2,7 @@
 (print-only-errors #t)
 
 (require "env.rkt")
-(require "core-base.rkt")
+(require "core.rkt")
 
 #| SL: Surface Language
 

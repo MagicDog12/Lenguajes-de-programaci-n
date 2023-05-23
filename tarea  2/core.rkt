@@ -4,6 +4,18 @@
 
 (require "env.rkt")
 
+;; log global
+(define log (box '()))
+
+;; resultados
+(deftype Result
+  (result val log))
+
+;; println-g :: num -> Null
+;; agrega el numero al log global
+(define (println-g n)
+  (set-box! log (cons n (unbox log))))
+
 #|
 <CL> ::= <num>
          | {+ <CL> <CL>}
@@ -56,7 +68,7 @@
     [(id x) (env-lookup x env)]
     [(printn e) 
       (def (numV n) (interp e env))
-      (println n)
+      (println-g n)
       (numV n)]
     [(app fun-expr arg-expr)
      (match (interp fun-expr env)
@@ -89,4 +101,15 @@
                             {+ n m}}}}
                  {{addn 10} 4}})
       14)
-;; ...
+
+;; interp-g :: expr -> Result
+;; retorna un valor de tipo Result (usando interp) pero reiniciando en cada llamada el log global
+(define (interp-g expr)
+  (set-box! log '())
+  (define v (interp expr empty-env))
+  (result v log))
+
+
+
+
+
